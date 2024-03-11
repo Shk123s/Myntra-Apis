@@ -41,21 +41,22 @@ router.use(bodyParser.json({ type: "routerlication/json" }));
         const [results] = await connection
           .promise() 
           .execute(sqlquery,[...setdata]);
-          console.log(sqlquery)
+          // console.log(sqlquery)
           const queryStrngCount = `select count(*) as count from (select * from products  ${testdta} ${join} limit 20 OFFSET 0 ) products`;
           const [resultsCount] = await connection.promise().query(queryStrngCount);
           if (!results || results.length === 0) {
             res.status(404).send({message:"product not found"})
           }
           
-       else{
+       else{  
+       
          res.status(200).send({
            message: "product list ",
            result: results,
            TotalUsercount:resultsCount[0].count
           });
           // console.log(results);
-       
+        
       }
     } catch (error) {
   
