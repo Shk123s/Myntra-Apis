@@ -5,6 +5,30 @@ const router = express.Router()
 const bodyParser = require("body-parser");
 router.use(bodyParser.json({ type: "routerlication/json" }));
 
+Roles = {
+  Admin : 1,
+  Hr:2,
+  Employee:3,
+  Intern:4
+};
+const CheckRole = (req,res,resultsadmin)=>{
+  console.log(resultsadmin);
+  if ( resultsadmin[0].is_role  === 1) {
+    console.log("object")
+    res.status(200).send({
+     message: "Welcome back admin",
+     result: resultsadmin,
+   });
+  }
+  else if ( resultsadmin[0].is_role  === 2) {
+    console.log("object")
+    res.status(200).send({
+     message: "Welcome back Hr",
+     result: resultsadmin,
+   });
+  }
+  // console.log("object")
+}
 
   const getProduct = async (req, res) => {
     try {
@@ -253,18 +277,27 @@ const deleteWishlist = async(req,res)=>{
 const userLogin = async (req,res)=>{
   try {
     const {email,password} = req.body;
-   console.log(req.body)
     if (!email ||  !password ) {
       res.status(400).send({
         message: "missing parameter",
       });
     } else {  
-      const sqlquery =
+      const sqlqueryadmin =
+      `select email,password,is_role from users where email=? and password =?  `;
+      const [resultsadmin] = await connection
+      .promise() 
+      .execute(sqlqueryadmin, [email,password]);
+   
+     if (resultsadmin) {
+    return   CheckRole(req,res,resultsadmin);
+     }
+  
+        const sqlquery =
         `select email,password from users where email=? and password =? `;
+      // console.log("sql")
       const [results] = await connection
         .promise() 
         .execute(sqlquery, [email,password]);
-      
         if ( results.length === 0) {
           res.status(500).send({message:"Invalid credentails"})
         }
@@ -274,7 +307,12 @@ const userLogin = async (req,res)=>{
         message: "Login successfully",
         result: results,
       });
-     }}
+     }
+    }
+    
+      
+      
+   
   } catch (error) {
     res.status(500).send({
       message: "Internal server error",
@@ -352,9 +390,9 @@ const middleware = (req,res,next)=>{
 
  } 
 
-
+ 
 //users routes
-router.get("/v1/users/login",middleware, userLogin);
+router.get("/v1/users/login", userLogin);
 router.post("/v1/users/forgetpassword", forgetpassword);
 router.post("/v1/users/resetpassword",resetpassword);
 router.get("/v1/user/:userid", getUser);
@@ -364,7 +402,7 @@ router.post("/v1/wishlist", addWishlist);
 router.put("/v1/wishlist", updateWishlist);
 router.delete("/v1/wishlist", deleteWishlist);
 // get product 
-router.get("/v1/product", getProduct);
+router.get("/v1/product",middleware, getProduct);
 router.get("/v1/product/:productId", getProductId);
 
 
