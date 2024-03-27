@@ -451,24 +451,66 @@ const deleteUserPosts = async (req, res) => {
   }
 };
 const CheckAccess = async (req,res,next)=>{
-  if (Role[0].is_role === 1) {
-    // console.log("admin");
-   next();
+  const {  user_id } = req.query;
+  if (!user_id) {
+    res.status(403).send({
+      message:"NO user_id provided",
+     
+    });
+ 
+  }else{
+    const checkadmin = "select  is_role from users where user_id =?;"
+    const [result] = await connection.promise().query(checkadmin,[user_id]);
+    // console.log(result.length)
+    if (result.length === 0  ) {
+     res.status(403).send({
+       message:"No userid is found",
+       result: result
+     })
+    }
+     else if (result[0].is_role === 1 ) {
+       // console.log("admin");
+      next();
+     }
+     else{
+       res.status(403).send({
+         message:"Forbidden",
+         result: result
+       })
+     }
   }
-  else{
-    res.statu(403).send({
-      message:"Forbidden",
-      result: Role
-    })
-  }
+ 
 }
 const approvedPosts = async (req,res)=>{
  
     try {
       
-      const {  is_approved, } = req.body;
-     
-
+      const {  id,userid } = req.body;
+  if (!id && !userid) {
+    res.status(406).send({
+      message:" provide ids. ",
+      result:result
+    });
+  }
+    else{
+        // console.log(req.body);
+        const approvedAdmin = "update userposts set is_approved = 1 where  id = ? and userid =?; "
+   // console.log(approvedAdmin);
+      const [result] = await connection.promise().query(approvedAdmin,[id,userid]);
+      if (result.affectedRows === 0) {
+        res.status(406).send({
+          message:" admin rejected the post. ",
+          result:result
+        });
+      }
+      else{
+        res.status(200).send({
+          message:" admin approved the post. ",
+          result:result
+        })
+      }
+    }
+   
     } catch (error) {
       res.status(500).send({
         message:"Internal server error",
@@ -504,6 +546,6 @@ router.post("/v1/userposts", addPosts);
 router.put("/v1/userposts", updatePosts);
 router.delete("/v1/userpostsdelete/:id", deleteUserPosts);
 //user admin approved 
-router.post("/v1/userposts", approvedPosts);
+router.put("/v1/approvedrequest", CheckAccess,approvedPosts);
 
 module.exports = router;
