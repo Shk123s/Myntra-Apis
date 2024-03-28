@@ -291,6 +291,21 @@ const userLogin = async (req, res) => {
     // console.log(error);
   }
 };
+const getallUser = async (req,res)=>{
+  try {
+  
+    const strquery =
+      "select name, phone_no ,email,password,is_active from users ";
+    const [result] = await connection.promise().query(strquery);
+    if (result.length === 0) {
+      res.status(200).send({ message: "no user found" });
+    } else {
+      res.status(500).send({ message: "user found", result: result });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
 
 const forgetpassword = async (req, res) => {
   try {
@@ -450,41 +465,12 @@ const deleteUserPosts = async (req, res) => {
     res.status(500).send({ message: "internal errror" });
   }
 };
-const CheckAccess = async (req,res,next)=>{
-  const {  user_id } = req.query;
-  if (!user_id) {
-    res.status(403).send({
-      message:"NO user_id provided",
-     
-    });
- 
-  }else{
-    const checkadmin = "select  is_role from users where user_id =?;"
-    const [result] = await connection.promise().query(checkadmin,[user_id]);
-    // console.log(result.length)
-    if (result.length === 0  ) {
-     res.status(403).send({
-       message:"No userid is found",
-       result: result
-     })
-    }
-     else if (result[0].is_role === 1 ) {
-       // console.log("admin");
-      next();
-     }
-     else{
-       res.status(403).send({
-         message:"Forbidden",
-         result: result
-       })
-     }
-  }
- 
-}
+
+
 const approvedPosts = async (req,res)=>{
  
     try {
-      
+      // console.log(req);
       const {  id,userid } = req.body;
   if (!id && !userid) {
     res.status(406).send({
@@ -519,19 +505,55 @@ const approvedPosts = async (req,res)=>{
     }
 }
 const middleware = (req, res, next) => {
-  const { user_id, token } = req.headers;
-  if (user_id && token) {
+  const { token } = req.headers;
+  const user_id = 4; 
+  console.log(user_id, token);
+  
+  if (user_id && token === "shaikh") {
     next();
   } else {
-    res.status(400).send({ message: "Invalid request" });
+    res.status(401).send({ message: "Unauthorized" });
   }
+  
 };
+const CheckAccess = async (req,res,next)=>{
+  const {  user_id } = req.query;
+  if (!user_id) {
+    res.status(403).send({
+      message:"No user_id provided",
+     
+    });
+ 
+  }else{
+    const checkadmin = "select  is_role from users where user_id =?;"
+    const [result] = await connection.promise().query(checkadmin,[user_id]);
+    // console.log(result.length)
+    if (result.length === 0  ) {
+     res.status(403).send({
+       message:"No userid is found",
+       result: result
+     })
+    }
+     else if (result[0].is_role === 1 ) {
+       // console.log("admin");
+      next();
+     }
+     else{
+       res.status(403).send({
+         message:"Forbidden",
+         result: "oops! Not an admin"
+       })
+     }
+  }
+ 
+}
  
 //users routes
 router.get("/v1/users/login", userLogin);
 router.post("/v1/users/forgetpassword", forgetpassword);
 router.post("/v1/users/resetpassword", resetpassword);
-router.get("/v1/user/:userid", getUser);
+router.get("/v1/user/:userid", middleware,CheckAccess,getUser);
+router.get("/v1/users",middleware,CheckAccess, getallUser);
 //wishlist each user
 router.get("/v1/wishtlist/:id", userProduct);
 router.post("/v1/wishlist", addWishlist);
@@ -540,12 +562,15 @@ router.delete("/v1/wishlist", deleteWishlist);
 // get product
 router.get("/v1/product", middleware, getProduct);
 router.get("/v1/product/:productId", getProductId);
-//post 
+//posts
 router.get("/v1/userposts", userposts);
+//pending 
+router.put("/v1/singleuserposts", SingleUserPosts);
 router.post("/v1/userposts", addPosts);
 router.put("/v1/userposts", updatePosts);
-router.delete("/v1/userpostsdelete/:id", deleteUserPosts);
-//user admin approved 
-router.put("/v1/approvedrequest", CheckAccess,approvedPosts);
+router.delete("/v1/userpostsdelete/:id",CheckAccess, deleteUserPosts);
+//user posts admin approval 
+router.put("/v1/approvalrequest", middleware,CheckAccess,approvedPosts);
+
 
 module.exports = router;
