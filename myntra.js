@@ -3,13 +3,26 @@ const connection = require("./database");
 const router = express.Router();
 const bodyParser = require("body-parser");
 router.use(bodyParser.json({ type: "routerlication/json" }));
-
+const nodemailer = require("nodemailer");
 Roles = {
   Admin: 1,
   Hr: 2,
   Employee: 3,
   Intern: 4,
 };
+//for email
+const transporter = nodemailer.createTransport({
+  service:"gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // Use `true` for port 465, `false` for all other ports
+  auth: {
+    user: "shaqeebsk1234@gmail.com",
+    pass: "uwxheqncnxmbbqhf",
+    // user: "margarita.littel99@ethereal.email",
+    // pass: "dEzHf7EpTnZrpdRQPh",
+  },
+});
 const CheckRole = (req, res, Role) => {
   // console.log("Role");
   if (Role[0].is_role === 1) {
@@ -35,8 +48,7 @@ const CheckRole = (req, res, Role) => {
       message: "Welcome back Intern",
       result: Role,
     });
-  }
-  else {
+  } else {
     res.status(200).send({
       message: "Login successfully",
       result: Role,
@@ -275,13 +287,12 @@ const userLogin = async (req, res) => {
         .promise()
         .execute(sqlquery, [email, password]);
       // console.log(results);
-      if(results.length === 0) {
-       return  res.status(500).send({ message: "Invalid credentails" });
-      } 
+      if (results.length === 0) {
+        return res.status(500).send({ message: "Invalid credentails" });
+      }
       if (results) {
         return CheckRole(req, res, results);
-      } 
-      
+      }
     }
   } catch (error) {
     res.status(500).send({
@@ -291,9 +302,8 @@ const userLogin = async (req, res) => {
     // console.log(error);
   }
 };
-const getallUser = async (req,res)=>{
+const getallUser = async (req, res) => {
   try {
-  
     const strquery =
       "select name, phone_no ,email,password,is_active from users ";
     const [result] = await connection.promise().query(strquery);
@@ -305,7 +315,7 @@ const getallUser = async (req,res)=>{
   } catch (error) {
     console.log(error);
   }
-}
+};
 
 const forgetpassword = async (req, res) => {
   try {
@@ -356,34 +366,37 @@ const resetpassword = async (req, res) => {
   }
 };
 
-const userposts =  async (req,res)=>{
+const userposts = async (req, res) => {
   try {
-    
-    const strquery =
-    "SELECT *  FROM userposts WHERE is_approved = 1 ;"
-   const countsquery =  "SELECT COUNT(*) as total_posts FROM userposts  WHERE is_approved = 1  ; "
+    const strquery = "SELECT *  FROM userposts WHERE is_approved = 1 ;";
+    const countsquery =
+      "SELECT COUNT(*) as total_posts FROM userposts  WHERE is_approved = 1  ; ";
 
     const [result] = await connection.promise().query(strquery);
     const [resultcount] = await connection.promise().query(countsquery);
     if (result.length === 0) {
       res.status(400).send({ message: "no posts found" });
     } else {
-      res.status(200).send({ message: "Hera are the posts", result: result,Total:resultcount });
+      res
+        .status(200)
+        .send({
+          message: "Hera are the posts",
+          result: result,
+          Total: resultcount,
+        });
     }
   } catch (error) {
     console.log(error);
-    
-      res.status(500).send({ message: "Internal server error", result: error });
-    
+
+    res.status(500).send({ message: "Internal server error", result: error });
   }
+};
 
-}
-
-const addPosts = async (req,res)=>{
+const addPosts = async (req, res) => {
   try {
-    const { content,post_date, userid,  } = req.body;
+    const { content, post_date, userid } = req.body;
 
-    if (!content && !post_date && !userid ) {
+    if (!content && !post_date && !userid) {
       res.status(400).send({
         message: "bad request",
       });
@@ -403,15 +416,12 @@ const addPosts = async (req,res)=>{
     res.send({ message: "internal error" });
     console.log(error);
   }
+};
 
-
-}
-
-const updatePosts = async (req,res)=>{
-
+const updatePosts = async (req, res) => {
   try {
     // console.log(req.params)
-    const { content,post_date, userid,  } = req.body;
+    const { content, post_date, userid } = req.body;
 
     if (!userid || !content || !post_date) {
       res.send({ message: "missing parameter" });
@@ -433,8 +443,8 @@ const updatePosts = async (req,res)=>{
     // console.log(sqlquery)
     // console.log(...queryData)
     const [result] = await connection
-    .promise()
-    .execute(sqlquery, [...queryData ,userid]);
+      .promise()
+      .execute(sqlquery, [...queryData, userid]);
 
     if (result.affectedRows == 0) {
       res.status(404).send({ message: "not updated" });
@@ -444,7 +454,7 @@ const updatePosts = async (req,res)=>{
   } catch (error) {
     console.log(error);
   }
-}
+};
 const deleteUserPosts = async (req, res) => {
   try {
     const { id } = req.params;
@@ -453,9 +463,7 @@ const deleteUserPosts = async (req, res) => {
       res.status(400).send({ message: "missing parameter" });
     }
     const sqlquery = "delete from  userposts where id=? ";
-    const [result] = await connection
-      .promise()
-      .execute(sqlquery, [id]);
+    const [result] = await connection.promise().execute(sqlquery, [id]);
     if (result.affectedRows === 1) {
       res.status(200).send({ message: "Post  deleted succesfully", result });
     } else {
@@ -465,95 +473,164 @@ const deleteUserPosts = async (req, res) => {
     res.status(500).send({ message: "internal errror" });
   }
 };
+const SingleUserPosts = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    console.log(req.params)
+    if (!user_id) {
+      res.send({ message: "missing parameter" });
+    }
+    else{
+      const query =
+      "select userposts.id,userposts.content,userposts.post_date,users.name as username ,users.email,users.is_active,users.is_role,users.user_id from userposts inner join users on userposts.userid = users.user_id where users.user_id= ? ";
 
-
-const approvedPosts = async (req,res)=>{
- 
-    try {
-      // console.log(req);
-      const {  id,userid } = req.body;
-  if (!id && !userid) {
-    res.status(406).send({
-      message:" provide ids. ",
-      result:result
+    const [result] = await connection.promise().query(query, [user_id]);
+    if (result.length === 0) {
+      res.status(400).send({ message: "no user  found of this post " });
+    } else {
+      res
+        .status(200)
+        .send({
+          message: "Hera are the posts of the users",
+          result: result,
+        });
+    }
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      message: "internal error",
     });
   }
-    else{
-        // console.log(req.body);
-        const approvedAdmin = "update userposts set is_approved = 1 where  id = ? and userid =?; "
-   // console.log(approvedAdmin);
-      const [result] = await connection.promise().query(approvedAdmin,[id,userid]);
+};
+
+const approvedPosts = async (req, res) => {
+  try {
+    // console.log(req);
+    // const {email} = req.headers
+    // console.log(req.headers.email);
+    const { id, userid } = req.body;
+    if (!id && !userid) {
+      res.status(406).send({
+        message: " provide ids. ",
+        result: result,
+      });
+    } else {
+      // console.log(req.body);
+      const approvedAdmin =
+        "update userposts set is_approved = 1 where  id = ? and userid =?; ";
+      // console.log(approvedAdmin);
+      const [result] = await connection
+        .promise()
+        .query(approvedAdmin, [id, userid]);
+      const emailquery = "select email from users where user_id=?";
+        const [resultemail] = await connection
+        .promise()
+        .query(emailquery, [userid]);
+        console.log(resultemail[0].email);
+
+          // send mail with defined transport object
+          const info = await transporter.sendMail({
+           from: "shoppinganytime18@gmail.com", // sender address
+          // to:email,
+            to:  resultemail[0].email, // list of receivers
+           subject: "Post approved ✔", // Subject line
+           html: "<h1>welcome </h1>", // html body
+           attachments:[{
+            filename:"offer letter",
+            path:"D:/codingfile/MyntraMvp/Job Offer Letter Professional Doc in White Grey Bare Minimal Style (1).pdf"
+           }]
+         });
+         console.log("Message sent: %s", info.messageId);
+         console.log("done sending mail",info)
+         // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@gmail.com>
+       
       if (result.affectedRows === 0) {
         res.status(406).send({
-          message:" admin rejected the post. ",
-          result:result
+          message: " admin rejected the post. ",
+          result: result,
+        });
+      } else {
+        res.status(200).send({
+          message: " admin approved the post. ",
+          result: result,
         });
       }
-      else{
-        res.status(200).send({
-          message:" admin approved the post. ",
-          result:result
-        })
-      }
     }
-   
-    } catch (error) {
-      res.status(500).send({
-        message:"Internal server error",
-        result:error
-      })
-    }
-}
+  } catch (error) {
+    console.log(error)
+    res.status(500).send({
+      message: "Internal server error",
+      result: error,
+    });
+  }
+};
 const middleware = (req, res, next) => {
   const { token } = req.headers;
-  const user_id = 4; 
+  const user_id = 4;
   console.log(user_id, token);
-  
+
   if (user_id && token === "shaikh") {
     next();
   } else {
     res.status(401).send({ message: "Unauthorized" });
   }
-  
 };
-const CheckAccess = async (req,res,next)=>{
-  const {  user_id } = req.query;
+const CheckAccess = async (req, res, next) => {
+  const { user_id } = req.query;
   if (!user_id) {
     res.status(403).send({
-      message:"No user_id provided",
-     
+      message: "No user_id provided",
     });
- 
-  }else{
-    const checkadmin = "select  is_role from users where user_id =?;"
-    const [result] = await connection.promise().query(checkadmin,[user_id]);
+  } else {
+    const checkadmin = "select  is_role from users where user_id =?;";
+    const [result] = await connection.promise().query(checkadmin, [user_id]);
     // console.log(result.length)
-    if (result.length === 0  ) {
-     res.status(403).send({
-       message:"No userid is found",
-       result: result
-     })
-    }
-     else if (result[0].is_role === 1 ) {
-       // console.log("admin");
+    if (result.length === 0) {
+      res.status(403).send({
+        message: "No userid is found",
+        result: result,
+      });
+    } else if (result[0].is_role === 1) {
+      // console.log("admin");
       next();
-     }
-     else{
-       res.status(403).send({
-         message:"Forbidden",
-         result: "oops! Not an admin"
-       })
-     }
+    } else {
+      res.status(403).send({
+        message: "Forbidden",
+        result: "oops! Not an admin",
+      });
+    }
   }
- 
-}
- 
+};
+// const SendMail = async (req,res,next)=>{
+
+//    try {
+//      // send mail with defined transport object
+//      const info = await transporter.sendMail({
+//       from: "shoppinganytime18@gmail.com", // sender address
+//       to:  "saddamsheikh357@gmail.com", // list of receivers
+//       subject: "Post approved ✔", // Subject line
+//       text: "Hello username ", // plain text body
+//       html: "<h1>welcome </h1>", // html body
+//     });
+//     console.log("Message sent: %s", info.messageId);
+//     console.log("done sending mail",info)
+//     // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@gmail.com>
+    
+//    } catch (error) {
+//     console.log(error);
+//    }
+// }
+
+// SendMail();
+//send Mail 
+// router.post("/v1/userssendMail", SendMail);
 //users routes
 router.get("/v1/users/login", userLogin);
 router.post("/v1/users/forgetpassword", forgetpassword);
 router.post("/v1/users/resetpassword", resetpassword);
-router.get("/v1/user/:userid", middleware,CheckAccess,getUser);
-router.get("/v1/users",middleware,CheckAccess, getallUser);
+router.get("/v1/user/:userid", middleware, CheckAccess, getUser);
+router.get("/v1/users", middleware, CheckAccess, getallUser);
 //wishlist each user
 router.get("/v1/wishtlist/:id", userProduct);
 router.post("/v1/wishlist", addWishlist);
@@ -564,13 +641,11 @@ router.get("/v1/product", middleware, getProduct);
 router.get("/v1/product/:productId", getProductId);
 //posts
 router.get("/v1/userposts", userposts);
-//pending 
-router.put("/v1/singleuserposts", SingleUserPosts);
+router.get("/v1/singleuserposts/:user_id", SingleUserPosts);
 router.post("/v1/userposts", addPosts);
 router.put("/v1/userposts", updatePosts);
-router.delete("/v1/userpostsdelete/:id",CheckAccess, deleteUserPosts);
-//user posts admin approval 
-router.put("/v1/approvalrequest", middleware,CheckAccess,approvedPosts);
-
-
+router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
+//user posts admin approval
+router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
+// middleware
 module.exports = router;
