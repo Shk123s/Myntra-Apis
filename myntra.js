@@ -500,6 +500,39 @@ const SingleUserPosts = async (req, res) => {
     });
   }
 };
+const addBulkPosts = async (req,res)=>{
+  try {
+    const { content, post_date, userid } = req.body;
+
+    if (!Array.isArray(bulkdata) || bulkdata.length === 0) {
+      return res.status(400).send({ message: "Invalid request body" });
+    }
+    let bulkdata = req.body;
+    // const values = bulkdata.map(post => [post.content, post.post_date, post.userid]);
+    // console.log(bulkdata);
+  let values = [];
+    for (let i = 0; i < bulkdata.length; i++) {
+      values.push([bulkdata[i].content, bulkdata[i].post_date, bulkdata[i].userid]);
+      
+    }
+    const sqlquery =
+    "insert into userposts(content,post_date,userid) values ? ";
+    
+    // console.log(values.flat());
+    const [result] = await connection
+      .promise()
+      .query(sqlquery, [values]);
+      // .query(sqlquery, [values.flat()]);
+    if (result.affectedRows == 0) {
+      res.status(200).send({ message: "not created" });
+    } else {
+      res.status(200).send({ message: "Done", result: result });
+    }
+  } catch (error) {
+    res.send({ message: "internal error" });
+    console.log(error);
+  }
+}
 
 const approvedPosts = async (req, res) => {
   try {
@@ -581,7 +614,7 @@ const CheckAccess = async (req, res, next) => {
     });
   } else {
     const checkadmin = "select  is_role from users where user_id =?;";
-    const [result] = await connection.promise().query(checkadmin, [user_id]);
+    const [result] = await connection.promise().execute(checkadmin, [user_id]);
     // console.log(result.length)
     if (result.length === 0) {
       res.status(403).send({
@@ -599,7 +632,7 @@ const CheckAccess = async (req, res, next) => {
     }
   }
 };
-// const SendMail = async (req,res,next)=>{
+
 
 //    try {
 //      // send mail with defined transport object
@@ -640,6 +673,8 @@ router.get("/v1/product/:productId", getProductId);
 router.get("/v1/userposts", userposts);
 router.get("/v1/singleuserposts/:user_id", SingleUserPosts);
 router.post("/v1/userposts", addPosts);
+//bulk insert   
+router.post("/v1/bulkuserposts", addBulkPosts);
 router.put("/v1/userposts", updatePosts);
 router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 //user posts admin approval
