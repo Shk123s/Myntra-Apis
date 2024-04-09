@@ -504,10 +504,10 @@ const addBulkPosts = async (req,res)=>{
   try {
     const { content, post_date, userid } = req.body;
 
-    if (!Array.isArray(bulkdata) || bulkdata.length === 0) {
-      return res.status(400).send({ message: "Invalid request body" });
-    }
     let bulkdata = req.body;
+    if (!Array.isArray(bulkdata) || bulkdata.length === 0) {
+      return res.status(400).send({ message: "Invalid request " });
+    }
     // const values = bulkdata.map(post => [post.content, post.post_date, post.userid]);
     // console.log(bulkdata);
   let values = [];
@@ -518,7 +518,7 @@ const addBulkPosts = async (req,res)=>{
     const sqlquery =
     "insert into userposts(content,post_date,userid) values ? ";
     
-    // console.log(values.flat());
+    console.log(values);
     const [result] = await connection
       .promise()
       .query(sqlquery, [values]);

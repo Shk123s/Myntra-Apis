@@ -40,3 +40,7 @@
 ::1 - - [09/Apr/2024:17:36:31 +0000] "POST /v1/bulkuserposts HTTP/1.1" 200 174 "-" "PostmanRuntime/7.37.3"
 ::1 - - [09/Apr/2024:17:36:43 +0000] "POST /v1/bulkuserposts HTTP/1.1" 200 174 "-" "PostmanRuntime/7.37.3"
 ::1 - - [09/Apr/2024:17:37:39 +0000] "POST /v1/bulkuserposts HTTP/1.1" 200 174 "-" "PostmanRuntime/7.37.3"
+::1 - - [09/Apr/2024:18:15:52 +0000] "POST /v1/bulkuserposts HTTP/1.1" 200 28 "-" "PostmanRuntime/7.37.3"
+::1 - - [09/Apr/2024:18:16:05 +0000] "POST /v1/bulkuserposts HTTP/1.1" 200 174 "-" "PostmanRuntime/7.37.3"
+::1 - - [09/Apr/2024:18:16:27 +0000] "POST /v1/bulkuserposts HTTP/1.1" 200 174 "-" "PostmanRuntime/7.37.3"
+::1 - - [09/Apr/2024:18:17:05 +0000] "POST /v1/bulkuserposts HTTP/1.1" 400 34 "-" "PostmanRuntime/7.37.3"
