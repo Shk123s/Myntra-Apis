@@ -4,6 +4,11 @@ const router = express.Router();
 const bodyParser = require("body-parser");
 router.use(bodyParser.json({ type: "routerlication/json" }));
 const nodemailer = require("nodemailer");
+const readXlsxFile = require("read-excel-file");
+const multer = require("multer");
+const reader = require("xlsx");
+const path = require("path");
+const moment = require("moment");
 Roles = {
   Admin: 1,
   Hr: 2,
@@ -12,7 +17,7 @@ Roles = {
 };
 //for email
 const transporter = nodemailer.createTransport({
-  service:"gmail",
+  service: "gmail",
   host: "smtp.gmail.com",
   port: 587,
   secure: false, // Use `true` for port 465, `false` for all other ports
@@ -374,13 +379,11 @@ const userposts = async (req, res) => {
     if (result.length === 0) {
       res.status(400).send({ message: "no posts found" });
     } else {
-      res
-        .status(200)
-        .send({
-          message: "Hera are the posts",
-          result: result,
-          Total: resultcount,
-        });
+      res.status(200).send({
+        message: "Hera are the posts",
+        result: result,
+        Total: resultcount,
+      });
     }
   } catch (error) {
     console.log(error);
@@ -473,25 +476,22 @@ const deleteUserPosts = async (req, res) => {
 const SingleUserPosts = async (req, res) => {
   try {
     const { user_id } = req.params;
-    console.log(req.params)
+    console.log(req.params);
     if (!user_id) {
       res.send({ message: "missing parameter" });
-    }
-    else{
-      const query =
-      "select userposts.id,userposts.content,userposts.post_date,users.name as username ,users.email,users.is_active,users.is_role,users.user_id from userposts inner join users on userposts.userid = users.user_id where users.user_id= ? ";
-
-    const [result] = await connection.promise().query(query, [user_id]);
-    if (result.length === 0) {
-      res.status(400).send({ message: "no user  found of this post " });
     } else {
-      res
-        .status(200)
-        .send({
+      const query =
+        "select userposts.id,userposts.content,userposts.post_date,users.name as username ,users.email,users.is_active,users.is_role,users.user_id from userposts inner join users on userposts.userid = users.user_id where users.user_id= ? ";
+
+      const [result] = await connection.promise().query(query, [user_id]);
+      if (result.length === 0) {
+        res.status(400).send({ message: "no user  found of this post " });
+      } else {
+        res.status(200).send({
           message: "Hera are the posts of the users",
           result: result,
         });
-    }
+      }
     }
   } catch (error) {
     console.log(error);
@@ -500,7 +500,7 @@ const SingleUserPosts = async (req, res) => {
     });
   }
 };
-const addBulkPosts = async (req,res)=>{
+const addBulkPosts = async (req, res) => {
   try {
     const { content, post_date, userid } = req.body;
 
@@ -510,19 +510,20 @@ const addBulkPosts = async (req,res)=>{
     }
     // const values = bulkdata.map(post => [post.content, post.post_date, post.userid]);
     // console.log(bulkdata);
-  let values = [];
+    let values = [];
     for (let i = 0; i < bulkdata.length; i++) {
-      values.push([bulkdata[i].content, bulkdata[i].post_date, bulkdata[i].userid]);
-      
+      values.push([
+        bulkdata[i].content,
+        bulkdata[i].post_date,
+        bulkdata[i].userid,
+      ]);
     }
     const sqlquery =
-    "insert into userposts(content,post_date,userid) values ? ";
-    
+      "insert into userposts(content,post_date,userid) values ? ";
+
     console.log(values);
-    const [result] = await connection
-      .promise()
-      .query(sqlquery, [values]);
-      // .query(sqlquery, [values.flat()]);
+    const [result] = await connection.promise().query(sqlquery, [values]);
+    // .query(sqlquery, [values.flat()]);
     if (result.affectedRows == 0) {
       res.status(200).send({ message: "not created" });
     } else {
@@ -532,7 +533,7 @@ const addBulkPosts = async (req,res)=>{
     res.send({ message: "internal error" });
     console.log(error);
   }
-}
+};
 
 const approvedPosts = async (req, res) => {
   try {
@@ -554,27 +555,29 @@ const approvedPosts = async (req, res) => {
         .promise()
         .query(approvedAdmin, [id, userid]);
       const emailquery = "select email from users where user_id=?";
-        const [resultemail] = await connection
+      const [resultemail] = await connection
         .promise()
         .query(emailquery, [userid]);
-        console.log(resultemail[0].email);
+      console.log(resultemail[0].email);
 
-          // send mail with defined transport object
-          const info = await transporter.sendMail({
-           from: "shoppinganytime18@gmail.com", // sender address
-          // to:email,
-            to:  resultemail[0].email, // list of receivers
-           subject: "Post approved ✔", // Subject line
-           html: "<h1>welcome </h1>", // html body
-           attachments:[{
-            filename:"offer letter",
-            path:"D:/codingfile/MyntraMvp/Job Offer Letter Professional Doc in White Grey Bare Minimal Style (1).pdf"
-           }]
-         });
-         console.log("Message sent: %s", info.messageId);
-         console.log("done sending mail",info)
-         // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@gmail.com>
-       
+      // send mail with defined transport object
+      const info = await transporter.sendMail({
+        from: "shoppinganytime18@gmail.com", // sender address
+        // to:email,
+        to: resultemail[0].email, // list of receivers
+        subject: "Post approved ✔", // Subject line
+        html: "<h1>welcome </h1>", // html body
+        attachments: [
+          {
+            filename: "offer letter",
+            path: "D:/codingfile/MyntraMvp/Job Offer Letter Professional Doc in White Grey Bare Minimal Style (1).pdf",
+          },
+        ],
+      });
+      console.log("Message sent: %s", info.messageId);
+      console.log("done sending mail", info);
+      // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@gmail.com>
+
       if (result.affectedRows === 0) {
         res.status(406).send({
           message: " admin rejected the post. ",
@@ -588,11 +591,72 @@ const approvedPosts = async (req, res) => {
       }
     }
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).send({
       message: "Internal server error",
       result: error,
     });
+  }
+};
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./src/");
+    // cb(null, path.join(__dirname,"../images"));
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+upload = multer({ storage: storage });
+
+const UploadExcel = async (req, res) => {
+  const file = reader.readFile(req.file.destination + req.file.filename);
+  let data = [];
+
+  let sheets = file.SheetNames;
+
+  for (let i = 0; i < sheets.length; i++) {
+    const temp = reader.utils.sheet_to_json(file.Sheets[file.SheetNames[i]]);
+    temp.forEach((res) => {
+      data.push(res);
+    });
+
+    try {
+      let bulkdata = data;
+      let values = [];
+
+      for (let i = 0; i < bulkdata.length; i++) {
+        const dateFormatted = moment(bulkdata[i].Date, "DD-MM-YYYY").format(
+          "YYYY-MM-DD"
+        );
+        const currentTime = moment().format("HH:mm:ss");
+        const exactTime = dateFormatted + " " + currentTime;
+        values.push([
+          bulkdata[i].sr,
+          bulkdata[i].FirstName,
+          bulkdata[i].LastName,
+          bulkdata[i].Gender,
+          bulkdata[i].Country,
+          bulkdata[i].Age,
+          exactTime,
+          bulkdata[i].Id,
+        ]);
+      }
+
+      const sqlquery =
+        "insert into exceluplaoddata(sr , firstname, lastname ,gender,country,age,date,userid) values ? ";
+
+      const [result] = await connection.promise().query(sqlquery, [values]);
+
+      if (result.affectedRows == 0) {
+        res.status(200).send({ message: "not created" });
+      } else {
+        res.status(200).send({ message: "Done", result: result });
+      }
+    } catch (error) {
+      res.send({ message: "internal error" });
+      console.log(error);
+    }
   }
 };
 const middleware = (req, res, next) => {
@@ -633,7 +697,6 @@ const CheckAccess = async (req, res, next) => {
   }
 };
 
-
 //    try {
 //      // send mail with defined transport object
 //      const info = await transporter.sendMail({
@@ -646,14 +709,14 @@ const CheckAccess = async (req, res, next) => {
 //     console.log("Message sent: %s", info.messageId);
 //     console.log("done sending mail",info)
 //     // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@gmail.com>
-    
+
 //    } catch (error) {
 //     console.log(error);
 //    }
 // }
 
 // SendMail();
-//send Mail 
+//send Mail
 // router.post("/v1/userssendMail", SendMail);
 //users routes
 router.get("/v1/users/login", userLogin);
@@ -673,11 +736,13 @@ router.get("/v1/product/:productId", getProductId);
 router.get("/v1/userposts", userposts);
 router.get("/v1/singleuserposts/:user_id", SingleUserPosts);
 router.post("/v1/userposts", addPosts);
-//bulk insert   
+//bulk insert
 router.post("/v1/bulkuserposts", addBulkPosts);
 router.put("/v1/userposts", updatePosts);
 router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 //user posts admin approval
 router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
+
+router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
 // middleware
 module.exports = router;
