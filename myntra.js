@@ -9,6 +9,8 @@ const multer = require("multer");
 const reader = require("xlsx");
 const path = require("path");
 const moment = require("moment");
+const Jimp = require("jimp");
+
 Roles = {
   Admin: 1,
   Hr: 2,
@@ -23,6 +25,7 @@ const transporter = nodemailer.createTransport({
   secure: false, // Use `true` for port 465, `false` for all other ports
   auth: {
     user: "shaqeebsk1234@gmail.com",
+    pass: "uwxheqncnxmbbqhf",
   },
 });
 const CheckRole = (req, res, Role) => {
@@ -697,6 +700,43 @@ const CheckAccess = async (req, res, next) => {
   }
 };
 
+const main = async (req, res, next) => {
+  const names = ['Shaqeebbb',"Muzafferal","Fahim"];
+  const emails = ['shaqeebsk1234@gmail.com',"muzzusyed153@gmail.com","khanfahim1234@gmail.com"]
+  const font = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
+  for (let i = 0; i < names.length; i++) {
+    const image = await Jimp.read(
+      "D:/codingfile/MyntraMvp/Blue Simple Achievement Certificate (1).png"
+    );
+     const name = names[i]
+     const email = emails[i]
+     const textWidth = Jimp.measureText(font, name);
+    const centerX = (image.bitmap.width - textWidth) / 2;
+
+    const centerY = (image.bitmap.height - Jimp.measureTextHeight(font, name)) / 2;
+
+    sentimage =  image.print(font, centerX, centerY, name).write(`writttenamed_${i}.png`);
+   
+     const info = await transporter.sendMail({
+      from: "shoppinganytime18@gmail.com", 
+      to:email, 
+      subject: "your certificate ✔",
+      html: "<h1>Congrats </h1>", 
+      attachments: [
+        {
+          filename: "Certificate.jpg",
+          path:`writttenamed_${i}.png` ,
+        },
+      ],
+    });
+    if (info.accepted) {
+      console.log(`Message sent to ${email}: %s`, info.messageId);
+    } else {
+      console.log(`Email sending failed for ${email}`);
+    }
+    }
+ 
+};
 //    try {
 //      // send mail with defined transport object
 //      const info = await transporter.sendMail({
@@ -744,5 +784,7 @@ router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
 
 router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
+router.post("/v1/generatecertificate", upload.single("file"), main);
+
 // middleware
 module.exports = router;
