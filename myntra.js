@@ -4,7 +4,6 @@ const router = express.Router();
 const bodyParser = require("body-parser");
 router.use(bodyParser.json({ type: "routerlication/json" }));
 const nodemailer = require("nodemailer");
-const readXlsxFile = require("read-excel-file");
 const multer = require("multer");
 const reader = require("xlsx");
 const path = require("path");
@@ -25,6 +24,7 @@ const transporter = nodemailer.createTransport({
   secure: false, // Use `true` for port 465, `false` for all other ports
   auth: {
     user: "shaqeebsk1234@gmail.com",
+    pass: "uwxheqncnxmbbqhf",
   },
 });
 const CheckRole = (req, res, Role) => {
@@ -602,7 +602,7 @@ const approvedPosts = async (req, res) => {
 };
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./src/");
+    cb(null, "./src/uploads");
     // cb(null, path.join(__dirname,"../images"));
   },
   filename: function (req, file, cb) {
@@ -612,7 +612,8 @@ const storage = multer.diskStorage({
 upload = multer({ storage: storage });
 
 const UploadExcel = async (req, res) => {
-  const file = reader.readFile(req.file.destination + req.file.filename);
+  const file =   reader.readFile(req.file.path);
+  console.log(req.file)
   let data = [];
 
   let sheets = file.SheetNames;
@@ -622,7 +623,7 @@ const UploadExcel = async (req, res) => {
     temp.forEach((res) => {
       data.push(res);
     });
-
+  } 
     try {
       let bulkdata = data;
       let values = [];
@@ -643,22 +644,20 @@ const UploadExcel = async (req, res) => {
           exactTime,
           bulkdata[i].Id,
         ]);
-      }
 
-      const sqlquery =
-        "insert into exceluplaoddata(sr , firstname, lastname ,gender,country,age,date,userid) values ? ";
+      } const sqlquery =
+      "insert into exceluplaoddata(sr , firstname, lastname ,gender,country,age,date,userid) values ? ";
 
-      const [result] = await connection.promise().query(sqlquery, [values]);
+    const [result] = await connection.promise().query(sqlquery, [values]);
 
-      if (result.affectedRows == 0) {
-        res.status(200).send({ message: "not created" });
-      } else {
-        res.status(200).send({ message: "Done", result: result });
-      }
-    } catch (error) {
-      res.send({ message: "internal error" });
-      console.log(error);
+    if (result.affectedRows == 0) {
+      res.status(200).send({ message: "not created" });
+    } else {
+      res.status(200).send({ message: "Done", result: result });
     }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "internal error" });
   }
 };
 const middleware = (req, res, next) => {
@@ -699,28 +698,45 @@ const CheckAccess = async (req, res, next) => {
   }
 };
 
-const main = async (req, res, next) => {
-  const names = ['Shaqeebbb',"Muzafferal","Fahim"];
-  const emails = ['shaqeebsk1234@gmail.com',"muzzusyed153@gmail.com","khanfahim1234@gmail.com"]
+const generatecertificate = async (req, res, next) => {
+ try {
+  const file = reader.readFile(req.files[1].path);
+  let data = [];
+  let sheets = file.SheetNames;
+
+  for (let i = 0; i < sheets.length; i++) {
+    const temp = reader.utils.sheet_to_json(file.Sheets[file.SheetNames[i]]);
+    temp.forEach((res) => {
+      data.push(res);
+    });
+  }
+  let bulkdata = data;
+  let names = [];
+  let emails = [];
+
+  for (let i = 0; i < bulkdata.length; i++) {
+    names.push([bulkdata[i].FirstName + " " + bulkdata[i].LastName]);
+    emails.push([bulkdata[i].email]);
+  }
+  const Imagepath = req.files[0].path;
   const font = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
   for (let i = 0; i < names.length; i++) {
-    const image = await Jimp.read(
-      "D:/codingfile/MyntraMvp/Blue Simple Achievement Certificate (1).png"
-    );
-     const name = names[i]
-     const email = emails[i]
-     const textWidth = Jimp.measureText(font, name);
+    const image = await Jimp.read(Imagepath);
+    const nameArray = names[i].toString();
+    const emailArray = emails[i];
+    const textWidth = Jimp.measureText(font, nameArray);
     const centerX = (image.bitmap.width - textWidth) / 2;
-
-    const centerY = (image.bitmap.height - Jimp.measureTextHeight(font, name)) / 2;
-
-    sentimage =  image.print(font, centerX, centerY, name).write(`writttenamed_${i}.png`);
-   
+    const centerY =
+      (image.bitmap.height - Jimp.measureTextHeight(font, nameArray)) / 2;
+    sentimage = image
+      .print(font, centerX, centerY, nameArray)
+      .write(`writttenamed_${i}.png`);
+    console.log("done");
      const info = await transporter.sendMail({
-      from: "shoppinganytime18@gmail.com", 
-      to:email, 
+      from: "shoppinganytime18@gmail.com",
+      to:emailArray,
       subject: "your certificate ✔",
-      html: "<h1>Congrats </h1>", 
+      html: "<h1>Congrats </h1>",
       attachments: [
         {
           filename: "Certificate.jpg",
@@ -729,12 +745,22 @@ const main = async (req, res, next) => {
       ],
     });
     if (info.accepted) {
-      console.log(`Message sent to ${email}: %s`, info.messageId);
+      console.log(`Message sent to ${emailArray}: %s`, info.messageId);
+      // res.send({
+      //   message:"Mail send successfully"
+      // })
     } else {
-      console.log(`Email sending failed for ${email}`);
+    
+      console.log(`Email sending failed for ${emailArray}`);
     }
-    }
- 
+  }
+  
+ } catch (error) {
+  res.send({
+    message:"Internal server error"
+  });
+  console.error(error)
+ }
 };
 //    try {
 //      // send mail with defined transport object
@@ -783,7 +809,7 @@ router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
 
 router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
-router.post("/v1/generatecertificate", upload.single("file"), main);
+router.post("/v1/generatecertificate", upload.array("files", 2), generatecertificate);
 
 // middleware
 module.exports = router;
