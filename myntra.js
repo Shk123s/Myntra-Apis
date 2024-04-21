@@ -702,6 +702,7 @@ const generatecertificate = async (req, res, next) => {
  try {
   const file = reader.readFile(req.files[1].path);
   let data = [];
+ 
   let sheets = file.SheetNames;
 
   for (let i = 0; i < sheets.length; i++) {
@@ -713,10 +714,11 @@ const generatecertificate = async (req, res, next) => {
   let bulkdata = data;
   let names = [];
   let emails = [];
-
+   let values = [] 
   for (let i = 0; i < bulkdata.length; i++) {
     names.push([bulkdata[i].FirstName + " " + bulkdata[i].LastName]);
     emails.push([bulkdata[i].email]);
+    values.push([bulkdata[i].FirstName + " " + bulkdata[i].LastName,bulkdata[i].email]);
   }
   const Imagepath = req.files[0].path;
   const font = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
@@ -728,10 +730,11 @@ const generatecertificate = async (req, res, next) => {
     const centerX = (image.bitmap.width - textWidth) / 2;
     const centerY =
       (image.bitmap.height - Jimp.measureTextHeight(font, nameArray)) / 2;
+      const generatedImage = `writttenamed_${i}.png`;
     sentimage = image
       .print(font, centerX, centerY, nameArray)
-      .write(`writttenamed_${i}.png`);
-    console.log("done");
+      .write(generatedImage);
+     values[i].push(generatedImage); 
      const info = await transporter.sendMail({
       from: "shoppinganytime18@gmail.com",
       to:emailArray,
@@ -746,14 +749,22 @@ const generatecertificate = async (req, res, next) => {
     });
     if (info.accepted) {
       console.log(`Message sent to ${emailArray}: %s`, info.messageId);
-      // res.send({
-      //   message:"Mail send successfully"
-      // })
     } else {
     
       console.log(`Email sending failed for ${emailArray}`);
     }
+
   }
+  const sqlquery =
+      "insert into certificates( certificate_name, certificate_email,certificate_path ) values ? ";
+
+    const [result] = await connection.promise().query(sqlquery, [values]);
+
+    if (result.affectedRows == 0) {
+      res.status(200).send({ message: "not created" });
+    } else {
+      res.status(200).send({ message: "Done", result: result });
+    }
   
  } catch (error) {
   res.send({
@@ -762,27 +773,6 @@ const generatecertificate = async (req, res, next) => {
   console.error(error)
  }
 };
-//    try {
-//      // send mail with defined transport object
-//      const info = await transporter.sendMail({
-//       from: "shoppinganytime18@gmail.com", // sender address
-//       to:  "saddamsheikh357@gmail.com", // list of receivers
-//       subject: "Post approved ✔", // Subject line
-//       text: "Hello username ", // plain text body
-//       html: "<h1>welcome </h1>", // html body
-//     });
-//     console.log("Message sent: %s", info.messageId);
-//     console.log("done sending mail",info)
-//     // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@gmail.com>
-
-//    } catch (error) {
-//     console.log(error);
-//    }
-// }
-
-// SendMail();
-//send Mail
-// router.post("/v1/userssendMail", SendMail);
 //users routes
 router.get("/v1/users/login", userLogin);
 router.post("/v1/users/forgetpassword", forgetpassword);
