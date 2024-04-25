@@ -32,3 +32,4 @@
 ::1 - - [21/Apr/2024:11:24:37 +0000] "POST /v1/generatecertificate HTTP/1.1" 200 35 "-" "PostmanRuntime/7.37.3"
 ::1 - - [21/Apr/2024:11:45:20 +0000] "POST /v1/generatecertificate HTTP/1.1" 200 35 "-" "PostmanRuntime/7.37.3"
 ::1 - - [21/Apr/2024:11:48:02 +0000] "POST /v1/generatecertificate HTTP/1.1" 200 173 "-" "PostmanRuntime/7.37.3"
+::1 - - [25/Apr/2024:14:27:32 +0000] "POST /v1/generatecertificate HTTP/1.1" 200 135 "-" "PostmanRuntime/7.37.3"
