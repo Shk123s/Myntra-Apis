@@ -9,7 +9,8 @@ const reader = require("xlsx");
 const path = require("path");
 const moment = require("moment");
 const Jimp = require("jimp");
-
+const fs = require("fs");
+const csv = require("csv-parser");
 Roles = {
   Admin: 1,
   Hr: 2,
@@ -612,49 +613,77 @@ const storage = multer.diskStorage({
 upload = multer({ storage: storage });
 
 const UploadExcel = async (req, res) => {
-  const file =   reader.readFile(req.file.path);
-  console.log(req.file)
-  let data = [];
+  try {
+    const allowedFileTypes = ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv"];
+    if (!req.file ) {
+    res.status(400).send({ message: `Excel File required `  });
+  }
+  else if(!allowedFileTypes.includes(req.file.mimetype))
+  {
+    res.status(400).send({ message: "Invalid file type. Allowed types: Excel (csv,xls, xlsx)." });
+  }
+  else{
+  const  objects = [];
 
-  let sheets = file.SheetNames;
-
-  for (let i = 0; i < sheets.length; i++) {
-    const temp = reader.utils.sheet_to_json(file.Sheets[file.SheetNames[i]]);
-    temp.forEach((res) => {
-      data.push(res);
+  function csv_to_array_of_objects(csv_file) {
+    return new Promise((resolve, reject) => {
+      fs.createReadStream(csv_file)
+        .pipe(csv())
+        .on("data", (row) => {
+          objects.push(
+            row
+          );
+        })
+        .on("end", () => {
+          resolve(objects);
+        })
+        .on("error", (error) => {
+          reject(error);
+        }); 
     });
-  } 
-    try {
-      let bulkdata = data;
-      let values = [];
+  }
+  let values;
 
-      for (let i = 0; i < bulkdata.length; i++) {
-        const dateFormatted = moment(bulkdata[i].Date, "DD-MM-YYYY").format(
-          "YYYY-MM-DD"
-        );
+  csv_to_array_of_objects(req.file.path)
+    .then((objects) => {
+      const bulkdata = objects;
+      values = [];
+  
+      bulkdata.forEach((obj) => {
+        const dateFormatted = moment(obj.Date, "DD-MM-YYYY").format("YYYY-MM-DD");
         const currentTime = moment().format("HH:mm:ss");
         const exactTime = dateFormatted + " " + currentTime;
+  
         values.push([
-          bulkdata[i].sr,
-          bulkdata[i].FirstName,
-          bulkdata[i].LastName,
-          bulkdata[i].Gender,
-          bulkdata[i].Country,
-          bulkdata[i].Age,
+          obj.sr,
+          obj.FirstName,
+          obj.LastName,
+          obj.Gender,
+          obj.Country,
+          obj.Age,
           exactTime,
-          bulkdata[i].Id,
+          obj.Id,
         ]);
-
-      } const sqlquery =
-      "insert into exceluplaoddata(sr , firstname, lastname ,gender,country,age,date,userid) values ? ";
-
-    const [result] = await connection.promise().query(sqlquery, [values]);
-
-    if (result.affectedRows == 0) {
-      res.status(200).send({ message: "not created" });
-    } else {
-      res.status(200).send({ message: "Done", result: result });
-    }
+      });
+  
+      const filteredvalue = values.flat();
+      const sqlquery =
+        "insert into exceluplaoddata(sr , firstname, lastname ,gender,country,age,date,userid) values (?) ";
+  
+      return connection.promise().query(sqlquery, [filteredvalue]);
+    })
+    .then(([result]) => {
+      if (result.affectedRows == 0) {
+        res.status(200).send({ message: "not created" });
+      } else {
+        res.status(200).send({ message: "Done", result: result });
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+  
+    });
+  }
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "internal error" });
@@ -700,6 +729,10 @@ const CheckAccess = async (req, res, next) => {
 
 const generatecertificate = async (req, res, next) => {
  try {
+  if (!req.file ) {
+    res.status(400).send({ message: `Excel File required `  });
+  }
+ else{
   const file = reader.readFile(req.files[1].path);
   let data = [];
  
@@ -765,6 +798,7 @@ const generatecertificate = async (req, res, next) => {
     } else {
       res.status(200).send({ message: "Done", result: result });
     }
+ }
   
  } catch (error) {
   res.send({
@@ -799,7 +833,6 @@ router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
 
 router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
-router.post("/v1/generatecertificate", upload.array("files", 2), generatecertificate);
+router.post("/v1/generatecertificate", upload.array("files", 2),middleware,CheckAccess, generatecertificate);
 
-// middleware
 module.exports = router;
