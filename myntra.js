@@ -716,7 +716,7 @@ const CheckAccess = async (req, res, next) => {
         result: result,
       });
     } else if (result[0].is_role === 1) {
-      // console.log("admin");
+      console.log("admin");
       next();
     } else {
       res.status(403).send({
@@ -729,7 +729,7 @@ const CheckAccess = async (req, res, next) => {
 
 const generatecertificate = async (req, res, next) => {
  try {
-  if (!req.file ) {
+  if (!req.files[1] ) {
     res.status(400).send({ message: `Excel File required `  });
   }
  else{
@@ -833,6 +833,6 @@ router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
 
 router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
-router.post("/v1/generatecertificate", upload.array("files", 2),middleware,CheckAccess, generatecertificate);
-
+router.post("/v1/generatecertificate", upload.array("files", 2), middleware,CheckAccess, generatecertificate);
+// middleware,CheckAccess,
 module.exports = router;
