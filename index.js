@@ -11,6 +11,7 @@ const fs = require("fs");
 app.use(morgan('combined', {
   stream: fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' }) // Log to a file
 }));
+
 app.use('/',myntra);
 
 
