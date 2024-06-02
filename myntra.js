@@ -966,12 +966,6 @@ router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
 
 router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
-router.post(
-  "/v1/generatecertificate",
-  upload.array("files", 2),
-  middleware,
-  CheckAccess,
-  generatecertificate
-);
+router.post( "/v1/generatecertificate", upload.array("files", 2), middleware, CheckAccess, generatecertificate);
 // middleware,CheckAccess,
 module.exports = router;
