@@ -11,6 +11,7 @@ const moment = require("moment");
 const Jimp = require("jimp");
 const fs = require("fs");
 const csv = require("csv-parser");
+
 Roles = {
   Admin: 1,
   Hr: 2,
@@ -614,76 +615,80 @@ upload = multer({ storage: storage });
 
 const UploadExcel = async (req, res) => {
   try {
-    const allowedFileTypes = ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv"];
-    if (!req.file ) {
-    res.status(400).send({ message: `Excel File required `  });
-  }
-  else if(!allowedFileTypes.includes(req.file.mimetype))
-  {
-    res.status(400).send({ message: "Invalid file type. Allowed types: Excel (csv,xls, xlsx)." });
-  }
-  else{
-  const  objects = [];
+    const allowedFileTypes = [
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "text/csv",
+    ];
+    if (!req.file) {
+      res.status(400).send({ message: `Excel File required ` });
+    } else if (!allowedFileTypes.includes(req.file.mimetype)) {
+      res
+        .status(400)
+        .send({
+          message: "Invalid file type. Allowed types: Excel (csv,xls, xlsx).",
+        });
+    } else {
+      const objects = [];
 
-  function csv_to_array_of_objects(csv_file) {
-    return new Promise((resolve, reject) => {
-      fs.createReadStream(csv_file)
-        .pipe(csv())
-        .on("data", (row) => {
-          objects.push(
-            row
-          );
-        })
-        .on("end", () => {
-          resolve(objects);
-        })
-        .on("error", (error) => {
-          reject(error);
-        }); 
-    });
-  }
-  let values;
-
-  csv_to_array_of_objects(req.file.path)
-    .then((objects) => {
-      const bulkdata = objects;
-      values = [];
-  
-      bulkdata.forEach((obj) => {
-        const dateFormatted = moment(obj.Date, "DD-MM-YYYY").format("YYYY-MM-DD");
-        const currentTime = moment().format("HH:mm:ss");
-        const exactTime = dateFormatted + " " + currentTime;
-  
-        values.push([
-          obj.sr,
-          obj.FirstName,
-          obj.LastName,
-          obj.Gender,
-          obj.Country,
-          obj.Age,
-          exactTime,
-          obj.Id,
-        ]);
-      });
-  
-      const filteredvalue = values.flat();
-      const sqlquery =
-        "insert into exceluplaoddata(sr , firstname, lastname ,gender,country,age,date,userid) values (?) ";
-  
-      return connection.promise().query(sqlquery, [filteredvalue]);
-    })
-    .then(([result]) => {
-      if (result.affectedRows == 0) {
-        res.status(200).send({ message: "not created" });
-      } else {
-        res.status(200).send({ message: "Done", result: result });
+      function csv_to_array_of_objects(csv_file) {
+        return new Promise((resolve, reject) => {
+          fs.createReadStream(csv_file)
+            .pipe(csv())
+            .on("data", (row) => {
+              objects.push(row);
+            })
+            .on("end", () => {
+              resolve(objects);
+            })
+            .on("error", (error) => {
+              reject(error);
+            });
+        });
       }
-    })
-    .catch((error) => {
-      console.log(error);
-  
-    });
-  }
+      let values;
+
+      csv_to_array_of_objects(req.file.path)
+        .then((objects) => {
+          const bulkdata = objects;
+          values = [];
+
+          bulkdata.forEach((obj) => {
+            const dateFormatted = moment(obj.Date, "DD-MM-YYYY").format(
+              "YYYY-MM-DD"
+            );
+            const currentTime = moment().format("HH:mm:ss");
+            const exactTime = dateFormatted + " " + currentTime;
+
+            values.push([
+              obj.sr,
+              obj.FirstName,
+              obj.LastName,
+              obj.Gender,
+              obj.Country,
+              obj.Age,
+              exactTime,
+              obj.Id,
+            ]);
+          });
+
+          const filteredvalue = values.flat();
+          const sqlquery =
+            "insert into exceluplaoddata(sr , firstname, lastname ,gender,country,age,date,userid) values (?) ";
+
+          return connection.promise().query(sqlquery, [filteredvalue]);
+        })
+        .then(([result]) => {
+          if (result.affectedRows == 0) {
+            res.status(200).send({ message: "not created" });
+          } else {
+            res.status(200).send({ message: "Done", result: result });
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "internal error" });
@@ -728,84 +733,202 @@ const CheckAccess = async (req, res, next) => {
 };
 
 const generatecertificate = async (req, res, next) => {
- try {
-  if (!req.files[1] ) {
-    res.status(400).send({ message: `Excel File required `  });
-  }
- else{
-  const file = reader.readFile(req.files[1].path);
-  let data = [];
- 
-  let sheets = file.SheetNames;
-
-  for (let i = 0; i < sheets.length; i++) {
-    const temp = reader.utils.sheet_to_json(file.Sheets[file.SheetNames[i]]);
-    temp.forEach((res) => {
-      data.push(res);
-    });
-  }
-  let bulkdata = data;
-  let names = [];
-  let emails = [];
-   let values = [] 
-  for (let i = 0; i < bulkdata.length; i++) {
-    names.push([bulkdata[i].FirstName + " " + bulkdata[i].LastName]);
-    emails.push([bulkdata[i].email]);
-    values.push([bulkdata[i].FirstName + " " + bulkdata[i].LastName,bulkdata[i].email]);
-  }
-  const Imagepath = req.files[0].path;
-  const font = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
-  for (let i = 0; i < names.length; i++) {
-    const image = await Jimp.read(Imagepath);
-    const nameArray = names[i].toString();
-    const emailArray = emails[i];
-    const textWidth = Jimp.measureText(font, nameArray);
-    const centerX = (image.bitmap.width - textWidth) / 2;
-    const centerY =
-      (image.bitmap.height - Jimp.measureTextHeight(font, nameArray)) / 2;
-      const generatedImage = `writttenamed_${i}.png`;
-    sentimage = image
-      .print(font, centerX, centerY, nameArray)
-      .write(generatedImage);
-     values[i].push(generatedImage); 
-     const info = await transporter.sendMail({
-      from: "shoppinganytime18@gmail.com",
-      to:emailArray,
-      subject: "your certificate ✔",
-      html: "<h1>Congrats </h1>",
-      attachments: [
-        {
-          filename: "Certificate.jpg",
-          path:`writttenamed_${i}.png` ,
-        },
-      ],
-    });
-    if (info.accepted) {
-      console.log(`Message sent to ${emailArray}: %s`, info.messageId);
+  try {
+    if (!req.files[1]) {
+      res.status(400).send({ message: `Excel File required ` });
     } else {
-    
-      console.log(`Email sending failed for ${emailArray}`);
-    }
+      const file = reader.readFile(req.files[1].path);
+      let data = [];
 
+      let sheets = file.SheetNames;
+
+      for (let i = 0; i < sheets.length; i++) {
+        const temp = reader.utils.sheet_to_json(
+          file.Sheets[file.SheetNames[i]]
+        );
+        temp.forEach((res) => {
+          data.push(res);
+        });
+      }
+      let bulkdata = data;
+      let names = [];
+      let emails = [];
+      let values = [];
+      for (let i = 0; i < bulkdata.length; i++) {
+        names.push([bulkdata[i].FirstName + " " + bulkdata[i].LastName]);
+        emails.push([bulkdata[i].email]);
+        values.push([
+          bulkdata[i].FirstName + " " + bulkdata[i].LastName,
+          bulkdata[i].email,
+        ]);
+      }
+      const Imagepath = req.files[0].path;
+      const font = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
+      for (let i = 0; i < names.length; i++) {
+        const image = await Jimp.read(Imagepath);
+        const nameArray = names[i].toString();
+        const emailArray = emails[i];
+        const textWidth = Jimp.measureText(font, nameArray);
+        const centerX = (image.bitmap.width - textWidth) / 2;
+        const centerY =
+          (image.bitmap.height - Jimp.measureTextHeight(font, nameArray)) / 2;
+        const generatedImage = `writttenamed_${i}.png`;
+        sentimage = image
+          .print(font, centerX, centerY, nameArray)
+          .write(generatedImage);
+        values[i].push(generatedImage);
+        const info = await transporter.sendMail({
+          from: "shoppinganytime18@gmail.com",
+          to: emailArray,
+          subject: "your certificate ✔",
+          html: "<h1>Congrats </h1>",
+          attachments: [
+            {
+              filename: "Certificate.jpg",
+              path: `writttenamed_${i}.png`,
+            },
+          ],
+        });
+        if (info.accepted) {
+          console.log(`Message sent to ${emailArray}: %s`, info.messageId);
+        } else {
+          console.log(`Email sending failed for ${emailArray}`);
+        }
+      }
+      const sqlquery =
+        "insert into certificates( certificate_name, certificate_email,certificate_path ) values ? ";
+
+      const [result] = await connection.promise().query(sqlquery, [values]);
+
+      if (result.affectedRows == 0) {
+        res.status(200).send({ message: "not created" });
+      } else {
+        res.status(200).send({ message: "Done", result: result });
+      }
+    }
+  } catch (error) {
+    res.send({
+      message: "Internal server error",
+    });
+    console.error(error);
   }
-  const sqlquery =
-      "insert into certificates( certificate_name, certificate_email,certificate_path ) values ? ";
+};
 
-    const [result] = await connection.promise().query(sqlquery, [values]);
+const getCategoryWithSubcategoryProductAll = async (req, res, next) => {
+  try {
+    //* Category id passed
+    const { id } = req.params;
 
-    if (result.affectedRows == 0) {
-      res.status(200).send({ message: "not created" });
+    if (!req.params.id) {
+      res.status(400).send({
+        message: "missing parameter",
+      });
     } else {
-      res.status(200).send({ message: "Done", result: result });
+      const sqlquery = `select *  from categories 
+      inner join 
+      subcategories  ON categories.id = subcategories.CategoryID
+      inner join products on 
+      subcategories.id = products.SubCategoryID  where categories.id = ${id} ;`;
+      const [results] = await connection.promise().execute(sqlquery, [id]);
+
+      let finalcategory = [];
+      let finalproduct = [];
+      results.forEach((data) => {
+        console.log(data)
+        const subCategory = {
+          SubCategoryID: data.SubCategoryID,
+          subcategoryName: data.subcategoryname,
+        };
+        finalcategory.push(subCategory); 
+        const product = {
+          id: data.product_id,
+          name: data.name,
+          type: data.type,
+          description: data.description,
+          price: data.price,
+          is_active: data.is_active,
+          SubCategoryID: data.SubCategoryID,
+        };
+        finalproduct.push(product);
+      });
+      if (!finalcategory || finalcategory.length==0 || !finalproduct || finalproduct.length == 0 ) {
+        res.status(409).send({success:false,message:"No product found!"});
+      }
+      res.status(200).send({
+        message: "category with subcategory and product list ",
+        subCategory: finalcategory,
+        product: finalproduct,
+      });
     }
- }
+  } catch (error) {
+    res.status(500).send({
+      message: "Internal server error",
+      error,
+    });
+      console.log(error);
+  }
+};
+const getSubcategorywithProductAll = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.params.id) {
+      res.status(400).send({
+        message: "missing parameter",
+      });
+    } else {
+      const sqlquery = `select *  from subcategories 
+      inner join products on 
+      subcategories.id = products.SubCategoryID  where subcategories.id = ${id} ;`;
+      const [results] = await connection.promise().execute(sqlquery, [id]);
+
+      if (!results || results.length === 0) {
+        res.status(404).send({ message: "No products found " });
+      } else {
+        res.status(200).send({
+          message: "subcategory and product list ",
+
+          result: results,
+          Toatalcount:results.length
+        });
+      }
+    }
   
- } catch (error) {
-  res.send({
-    message:"Internal server error"
-  });
-  console.error(error)
- }
+  } catch (error) {
+    res.status(500).send({
+      message: "Internal server error",
+      error,
+    });
+    //   console.log(error);
+  }
+};
+const getProductAll = async (req, res, next) => {
+  try {
+    const sqlquery = `select *  from products`;
+    const [results] = await connection.promise().execute(sqlquery);
+    // only one join can also work
+    const countsquery = `select   count(products.product_id) as count from products `;
+
+    const [countresult] = await connection.promise().execute(countsquery);
+
+    if (!results || results.length === 0) {
+      res.status(404).send({ message: "No products found " });
+    } else {
+      res.status(200).send({
+        message: "product list ",
+
+        result: results,
+        count: countresult[0].count,
+      });
+      // console.log(countresult);
+    }
+  } catch (error) {
+    res.status(500).send({
+      message: "Internal server error",
+      error,
+    });
+    //   console.log(error);
+  }
 };
 //users routes
 router.get("/v1/users/login", userLogin);
@@ -821,6 +944,16 @@ router.delete("/v1/wishlist", deleteWishlist);
 // get product
 router.get("/v1/product", middleware, getProduct);
 router.get("/v1/product/:productId", getProductId);
+
+//category
+router.get("/v1/categorywithproduct/:id", getCategoryWithSubcategoryProductAll);
+
+//subcategory
+router.get("/v1/subcategorywithproduct/:id", getSubcategorywithProductAll);
+
+//product
+router.get("/v1/productAll", getProductAll);
+
 //posts
 router.get("/v1/userposts", userposts);
 router.get("/v1/singleuserposts/:user_id", SingleUserPosts);
@@ -833,6 +966,12 @@ router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
 
 router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
-router.post("/v1/generatecertificate", upload.array("files", 2), middleware,CheckAccess, generatecertificate);
+router.post(
+  "/v1/generatecertificate",
+  upload.array("files", 2),
+  middleware,
+  CheckAccess,
+  generatecertificate
+);
 // middleware,CheckAccess,
 module.exports = router;
