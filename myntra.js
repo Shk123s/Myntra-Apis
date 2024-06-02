@@ -942,9 +942,6 @@ router.get("/v1/wishtlist/:id", userProduct);
 router.post("/v1/wishlist", addWishlist);
 router.put("/v1/wishlist", updateWishlist);
 router.delete("/v1/wishlist", deleteWishlist);
-// get product
-router.get("/v1/product", middleware, getProduct);
-router.get("/v1/product/:productId", getProductId);
 
 //category
 router.get("/v1/categorywithproduct/:id", getCategoryWithSubcategoryProductAll);
@@ -954,7 +951,7 @@ router.get("/v1/subcategorywithproduct/:id", getSubcategorywithProductAll);
 
 //product
 router.get("/v1/productAll", getProductAll);
-
+router.get("/v1/product/:productId", getProductId);
 //posts
 router.get("/v1/userposts", userposts);
 router.get("/v1/singleuserposts/:user_id", SingleUserPosts);
