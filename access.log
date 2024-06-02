@@ -340,3 +340,5 @@
 ::1 - - [02/Jun/2024:13:38:46 +0000] "GET /v1/subcategorywithproduct/1 HTTP/1.1" 200 1001 "-" "PostmanRuntime/7.37.3"
 ::1 - - [02/Jun/2024:13:38:53 +0000] "GET /v1/subcategorywithproduct/2 HTTP/1.1" 200 964 "-" "PostmanRuntime/7.37.3"
 ::1 - - [02/Jun/2024:13:38:58 +0000] "GET /v1/subcategorywithproduct/5 HTTP/1.1" 200 510 "-" "PostmanRuntime/7.37.3"
+::1 - - [02/Jun/2024:14:50:33 +0000] "GET /v1/users/login HTTP/1.1" 200 108 "-" "PostmanRuntime/7.37.3"
+::1 - - [02/Jun/2024:14:50:48 +0000] "GET /v1/users/login HTTP/1.1" 200 108 "-" "PostmanRuntime/7.37.3"

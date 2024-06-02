@@ -11,6 +11,7 @@ const moment = require("moment");
 const Jimp = require("jimp");
 const fs = require("fs");
 const csv = require("csv-parser");
+require('dotenv').config()
 
 Roles = {
   Admin: 1,
@@ -25,8 +26,8 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false, // Use `true` for port 465, `false` for all other ports
   auth: {
-    user: "shaqeebsk1234@gmail.com",
-    pass: "uwxheqncnxmbbqhf",
+    user: process.env.USER_NAME,
+    pass:process.env.USER_PASS,
   },
 });
 const CheckRole = (req, res, Role) => {
@@ -699,7 +700,7 @@ const middleware = (req, res, next) => {
   const user_id = 4;
   console.log(user_id, token);
 
-  if (user_id && token === "shaikh") {
+  if (user_id && token === process.env.JWT_KEY) {
     next();
   } else {
     res.status(401).send({ message: "Unauthorized" });
