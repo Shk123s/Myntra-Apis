@@ -952,6 +952,9 @@ router.get("/v1/subcategorywithproduct/:id", getSubcategorywithProductAll);
 //product
 router.get("/v1/productAll", getProductAll);
 router.get("/v1/product/:productId", getProductId);
+// this getproduct contains filter and sorting 
+router.get("/v1/product", middleware, getProduct);
+
 //posts
 router.get("/v1/userposts", userposts);
 router.get("/v1/singleuserposts/:user_id", SingleUserPosts);
