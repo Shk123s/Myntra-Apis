@@ -4,7 +4,15 @@ node_modules
 .png
 .log
 src
-*<pdf>
+
+# Ignore .log files
+*.log
+
+# Ignore .pdf files
+*.pdf
+
+# Ignore .png files
+*.png
 # Logs
 logs
 *.log
