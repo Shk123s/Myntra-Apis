@@ -4,7 +4,7 @@ node_modules
 .png
 .log
 src
-
+*<.pdf>
 # Logs
 logs
 *.log
