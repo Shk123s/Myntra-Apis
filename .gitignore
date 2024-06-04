@@ -1,20 +1,23 @@
 node_modules
-access.log
+Bye.png/
 .env
-Job Offer Letter Professional Doc in White Grey Bare Minimal Style (1)
-bye.png
-Blue Simple Achievement Certificate (1)
 src
 
-# Logs
-logs
+# Ignore .log files
 *.log
+
+# Ignore .pdf files
+*.pdf
+
+# Ignore .png files
+*.png
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
+access.log*
 node_modules
 dist
 dist-ssr
