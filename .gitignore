@@ -1,8 +1,5 @@
 node_modules
 .env
-.pdf
-.png
-access.log
 src
 
 # Ignore .log files
