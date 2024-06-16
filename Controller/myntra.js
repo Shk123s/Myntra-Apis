@@ -1,68 +1,20 @@
 const express = require("express");
-const connection = require("./database");
+const connection = require("../database");
 const router = express.Router();
 const bodyParser = require("body-parser");
-router.use(bodyParser.json({ type: "routerlication/json" }));
-const nodemailer = require("nodemailer");
 const multer = require("multer");
 const reader = require("xlsx");
 const path = require("path");
 const moment = require("moment");
 const Jimp = require("jimp");
 const fs = require("fs");
+const { CheckRole } = require("../Middleware/checkRole");
+const { CheckAccess, middleware } = require("../Middleware/checkAccess");
+const { Roles } = require("../Utilis/Roles");
 const csv = require("csv-parser");
-require('dotenv').config()
-
-Roles = {
-  Admin: 1,
-  Hr: 2,
-  Employee: 3,
-  Intern: 4,
-};
-//for email
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // Use `true` for port 465, `false` for all other ports
-  auth: {
-    user: process.env.USER_NAME,
-    pass:process.env.USER_PASS,
-  },
-});
-const CheckRole = (req, res, Role) => {
-  // console.log("Role");
-  if (Role[0].is_role === 1) {
-    // console.log("object");
-    res.status(200).send({
-      message: "Welcome back admin",
-      result: Role,
-    });
-  } else if (Role[0].is_role === 2) {
-    // console.log("object");
-    res.status(200).send({
-      message: "Welcome back Hr",
-      result: Role,
-    });
-  } else if (Role[0].is_role === 3) {
-    // console.log("object");
-    res.status(200).send({
-      message: "Welcome back emoloyee",
-      result: Role,
-    });
-  } else if (Role[0].is_role === 4) {
-    res.status(200).send({
-      message: "Welcome back Intern",
-      result: Role,
-    });
-  } else {
-    res.status(200).send({
-      message: "Login successfully",
-      result: Role,
-    });
-  }
-  // console.log("object")
-};
+const { transporter } = require("../mailer/mail");
+const Joi = require("joi");
+require("dotenv").config();
 
 const getProduct = async (req, res) => {
   try {
@@ -224,7 +176,6 @@ const addWishlist = async (req, res) => {
 };
 const updateWishlist = async (req, res) => {
   try {
-    // console.log(req.params)
     const { user_id, product_id, quantity } = req.body;
 
     if (!user_id || !product_id || !quantity) {
@@ -283,30 +234,73 @@ const deleteWishlist = async (req, res) => {
 const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      res.status(400).send({
-        message: "missing parameter",
+
+    const userLogin  = Joi.object({
+      email: Joi.string().required().messages({
+        'any.required': 'email required ',
+        'string.empty': 'missing parameter',
+      }),
+      password: Joi.string().required().messages({
+        'any.required': 'password required ',
+        'string.empty': 'missing parameter',
+      }),
+      
+    });
+    const { error } = userLogin.validate(req.body);
+    if (error) {
+      return res.status(400).send({
+        message: error.details[0].message,
       });
-    } else {
-      const sqlquery = `select email,password,is_role from users where email=? and password =? `;
-      // console.log("sql")
-      const [results] = await connection
-        .promise()
-        .execute(sqlquery, [email, password]);
-      // console.log(results);
-      if (results.length === 0) {
-        return res.status(500).send({ message: "Invalid credentails" });
-      }
-      if (results) {
-        return CheckRole(req, res, results);
-      }
+    }
+    const sqlquery = `select email,password,is_role from users where email=? and password =? `;
+    const [results] = await connection.promise().query(sqlquery, [email, password]);
+    if (results.length === 0 || results === null) {
+      return res.status(400).send({
+        message: "Invalid credentials",
+      });
+    }
+    const userEmail = results[0].email;
+    const genrateotp = Math.floor(Math.floor(Math.random() * 8888 + 1111));
+    const info = await transporter.sendMail({
+      from: "shoppinganytime18@gmail.com",
+      to: userEmail,
+      subject: "Otp for Login",
+      html: `<h1> Otp : ${genrateotp.toString()}</h1>`,
+    });
+    let updateOtp = `update users set  otp=? where  email =? `;
+    const [updatedOtp] = await connection.promise().execute(updateOtp, [genrateotp, userEmail]);
+      if (info.accepted.length > 0) {
+        console.log(`Message sent to ${userEmail}: %s`,"this is id ", info.messageId);
+        return res.status(200).send({
+          message: `OTP sent to ${userEmail}`,
+        });
+      } else {
+        console.log(`Email sending failed for ${userEmail}`);
+        return res.status(200).send({
+          message: `Email sending failed for ${userEmail}`,
+        });
     }
   } catch (error) {
     res.status(500).send({
       message: "Internal server error",
       error,
     });
-    // console.log(error);
+  }
+};
+const userLoginOtp = async (req, res) => {
+  const { otp } = req.body;
+  let queryStrngotp = `select email,password,is_role from users where  otp =? `;
+  const [matchedotp] = await connection.promise().query(queryStrngotp, [otp]);
+  const userDetails = {
+    email: matchedotp[0].email,
+    password: matchedotp[0].password,
+  };
+  if (matchedotp) {
+    return CheckRole(res, matchedotp[0].is_role, userDetails);
+  } else {
+    res.status(401).send({
+      message: "Invalid otp",
+    });
   }
 };
 const getallUser = async (req, res) => {
@@ -624,11 +618,9 @@ const UploadExcel = async (req, res) => {
     if (!req.file) {
       res.status(400).send({ message: `Excel File required ` });
     } else if (!allowedFileTypes.includes(req.file.mimetype)) {
-      res
-        .status(400)
-        .send({
-          message: "Invalid file type. Allowed types: Excel (csv,xls, xlsx).",
-        });
+      res.status(400).send({
+        message: "Invalid file type. Allowed types: Excel (csv,xls, xlsx).",
+      });
     } else {
       const objects = [];
 
@@ -693,43 +685,6 @@ const UploadExcel = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "internal error" });
-  }
-};
-const middleware = (req, res, next) => {
-  const { token } = req.headers;
-  const user_id = 4;
-  console.log(user_id, token);
-
-  if (user_id && token === process.env.JWT_KEY) {
-    next();
-  } else {
-    res.status(401).send({ message: "Unauthorized" });
-  }
-};
-const CheckAccess = async (req, res, next) => {
-  const { user_id } = req.query;
-  if (!user_id) {
-    res.status(403).send({
-      message: "No user_id provided",
-    });
-  } else {
-    const checkadmin = "select  is_role from users where user_id =?;";
-    const [result] = await connection.promise().execute(checkadmin, [user_id]);
-    // console.log(result.length)
-    if (result.length === 0) {
-      res.status(403).send({
-        message: "No userid is found",
-        result: result,
-      });
-    } else if (result[0].is_role === 1) {
-      console.log("admin");
-      next();
-    } else {
-      res.status(403).send({
-        message: "Forbidden",
-        result: "oops! Not an admin",
-      });
-    }
   }
 };
 
@@ -817,12 +772,19 @@ const generatecertificate = async (req, res, next) => {
 
 const getCategoryWithSubcategoryProductAll = async (req, res, next) => {
   try {
+    const getCategoryWithSubcategoryProductAll = Joi.object({
+      id: Joi.string().required().messages({
+        "any.required": "CategoryId required ",
+        "string.empty": "missing parameter",
+      }),
+    });
+    const { error } = getCategoryWithSubcategoryProductAll.validate(req.params);
     //* Category id passed
     const { id } = req.params;
 
-    if (!req.params.id) {
-      res.status(400).send({
-        message: "missing parameter",
+    if (error) {
+      return res.status(400).send({
+        message: error.details[0].message,
       });
     } else {
       const sqlquery = `select *  from categories 
@@ -835,12 +797,11 @@ const getCategoryWithSubcategoryProductAll = async (req, res, next) => {
       let finalcategory = [];
       let finalproduct = [];
       results.forEach((data) => {
-        console.log(data)
         const subCategory = {
           SubCategoryID: data.SubCategoryID,
           subcategoryName: data.subcategoryname,
         };
-        finalcategory.push(subCategory); 
+        finalcategory.push(subCategory);
         const product = {
           id: data.product_id,
           name: data.name,
@@ -852,21 +813,32 @@ const getCategoryWithSubcategoryProductAll = async (req, res, next) => {
         };
         finalproduct.push(product);
       });
-      if (!finalcategory || finalcategory.length==0 || !finalproduct || finalproduct.length == 0 ) {
-        res.status(409).send({success:false,message:"No product found!"});
+      if (
+        !finalcategory ||
+        finalcategory.length == 0 ||
+        !finalproduct ||
+        finalproduct.length == 0
+      ) {
+        res
+          .status(409)
+          .send({
+            success: false,
+            message: "category with this subcategory No product found!",
+          });
+      } else {
+        res.status(200).send({
+          message: "category with subcategory and product list ",
+          subCategory: finalcategory,
+          product: finalproduct,
+        });
       }
-      res.status(200).send({
-        message: "category with subcategory and product list ",
-        subCategory: finalcategory,
-        product: finalproduct,
-      });
     }
   } catch (error) {
+    console.log(error);
     res.status(500).send({
       message: "Internal server error",
       error,
     });
-      console.log(error);
   }
 };
 const getSubcategorywithProductAll = async (req, res, next) => {
@@ -890,11 +862,10 @@ const getSubcategorywithProductAll = async (req, res, next) => {
           message: "subcategory and product list ",
 
           result: results,
-          Toatalcount:results.length
+          Toatalcount: results.length,
         });
       }
     }
-  
   } catch (error) {
     res.status(500).send({
       message: "Internal server error",
@@ -933,6 +904,7 @@ const getProductAll = async (req, res, next) => {
 };
 //users routes
 router.get("/v1/users/login", userLogin);
+router.post("/v1/users/userLoginOtp", userLoginOtp);
 router.post("/v1/users/forgetpassword", forgetpassword);
 router.post("/v1/users/resetpassword", resetpassword);
 router.get("/v1/user/:userid", middleware, CheckAccess, getUser);
@@ -952,8 +924,8 @@ router.get("/v1/subcategorywithproduct/:id", getSubcategorywithProductAll);
 //product
 router.get("/v1/productAll", getProductAll);
 router.get("/v1/product/:productId", getProductId);
-// this getproduct contains filter and sorting 
-router.get("/v1/product", middleware, getProduct);
+// this getproduct contains filter and sorting
+router.get("/v1/Allproduct", getProduct);
 
 //posts
 router.get("/v1/userposts", userposts);
@@ -967,6 +939,12 @@ router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
 
 router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
-router.post( "/v1/generatecertificate", upload.array("files", 2), middleware, CheckAccess, generatecertificate);
+router.post(
+  "/v1/generatecertificate",
+  upload.array("files", 2),
+  middleware,
+  CheckAccess,
+  generatecertificate
+);
 // middleware,CheckAccess,
 module.exports = router;
