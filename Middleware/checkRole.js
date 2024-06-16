@@ -14,7 +14,7 @@ exports.CheckRole = (res, Role,userDetails) => {
         message: "Welcome back admin",
         userDetails: userDetails,
       });
-    } else {
+    } else if (Role === 2){
         userDetails.role = "user"
     return  res.status(200).send({
         message: "Welcome back User",
