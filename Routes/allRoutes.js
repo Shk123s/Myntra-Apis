@@ -2,7 +2,7 @@ const express = require("express");
 const  {getProduct,userProduct,getProductId,getUser,addWishlist,updateWishlist,deleteWishlist,
     userLogin,userLoginOtp,getallUser,forgetpassword,resetpassword,userposts,addPosts,updatePosts,
     deleteUserPosts,SingleUserPosts,addBulkPosts,approvedPosts,storage,upload,UploadExcel
-    ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,getProductAll} = require("../Controller/myntra");
+    ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,getProductAll,brandsAdd,brandsGetAll} = require("../Controller/myntra");
 const router = express.Router();
 const { CheckAccess, middleware } = require("../Middleware/checkAccess");
 
@@ -42,6 +42,11 @@ router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
 //user posts admin approval
 router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
 
+//brandsAdd 
+router.post("/v1/supplierAdd", brandsAdd);
+router.get("/v1/supplierGetAll", brandsGetAll);
+
+//special route
 router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
 router.post( "/v1/generatecertificate",upload.array("files", 2),middleware,CheckAccess,generatecertificate);
 // middleware,CheckAccess,

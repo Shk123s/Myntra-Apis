@@ -1,3 +1,5 @@
+const connection = require("../database");
+
 exports.middleware = (req, res, next) => {
     const { token } = req.headers;
     const user_id = 4;
@@ -18,7 +20,7 @@ exports.middleware = (req, res, next) => {
     } else {
       const checkadmin = "select  is_role from users where user_id =?;";
       const [result] = await connection.promise().execute(checkadmin, [user_id]);
-      // console.log(result.length)
+      console.log(result)
       if (result.length === 0) {
         res.status(403).send({
           message: "No userid is found",
