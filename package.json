@@ -1,6 +1,9 @@
-{
+{  "scripts": {
+  "serve": "nodemon index.js"
+},
   "dependencies": {
     "@grammyjs/menu": "^1.2.1",
+    "axios": "^1.7.2",
     "body-parser": "^1.20.2",
     "cron": "^3.1.7",
     "cron-schedule": "^5.0.1",
@@ -9,6 +12,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
+    "geolocation": "^0.2.0",
     "grammy": "^1.22.4",
     "i": "^0.3.7",
     "jimp": "^0.22.12",
@@ -19,6 +23,7 @@
     "mysql2": "^3.9.1",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.13",
+    "nodemon": "^3.1.4",
     "path": "^0.12.7",
     "read-excel-file": "^5.7.1",
     "telegram-keyboard": "^2.3.5",

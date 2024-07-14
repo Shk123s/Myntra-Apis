@@ -1,7 +1,4 @@
-const express = require("express");
 const connection = require("../database");
-const router = express.Router();
-const bodyParser = require("body-parser");
 const multer = require("multer");
 const reader = require("xlsx");
 const path = require("path");
@@ -9,8 +6,6 @@ const moment = require("moment");
 const Jimp = require("jimp");
 const fs = require("fs");
 const { CheckRole } = require("../Middleware/checkRole");
-const { CheckAccess, middleware } = require("../Middleware/checkAccess");
-const { Roles } = require("../Utilis/Roles");
 const csv = require("csv-parser");
 const { transporter } = require("../mailer/mail");
 const Joi = require("joi");
@@ -141,9 +136,9 @@ const getUser = async (req, res) => {
       "select name, phone_no ,email,password,is_active from users where user_id=?";
     const [result] = await connection.promise().query(strquery, [userid]);
     if (result.length === 0) {
-      res.status(200).send({ message: "no user found" });
+      res.status(404).send({ message: "no user found" });
     } else {
-      res.status(500).send({ message: "user found", result: result });
+      res.status(200).send({ message: "user found", result: result });
     }
   } catch (error) {
     console.log(error);
@@ -271,6 +266,10 @@ const userLogin = async (req, res) => {
     const [updatedOtp] = await connection.promise().execute(updateOtp, [genrateotp, userEmail]);
       if (info.accepted.length > 0) {
         console.log(`Message sent to ${userEmail}: %s`,"this is id ", info.messageId);
+        const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+        // Log the IP address
+        console.log('User IP Address:', userIp);
         return res.status(200).send({
           message: `OTP sent to ${userEmail}`,
         });
@@ -281,6 +280,7 @@ const userLogin = async (req, res) => {
         });
     }
   } catch (error) {
+    console.log(error)
     res.status(500).send({
       message: "Internal server error",
       error,
@@ -309,9 +309,9 @@ const getallUser = async (req, res) => {
       "select name, phone_no ,email,password,is_active from users ";
     const [result] = await connection.promise().query(strquery);
     if (result.length === 0) {
-      res.status(200).send({ message: "no user found" });
+      res.status(404).send({ message: "no user found" });
     } else {
-      res.status(500).send({ message: "user found", result: result });
+      res.status(200).send({ message: "user found", result: result });
     }
   } catch (error) {
     console.log(error);
@@ -536,9 +536,7 @@ const addBulkPosts = async (req, res) => {
 
 const approvedPosts = async (req, res) => {
   try {
-    // console.log(req);
-    // const {email} = req.headers
-    // console.log(req.headers.email);
+   
     const { id, userid } = req.body;
     if (!id && !userid) {
       res.status(406).send({
@@ -569,7 +567,7 @@ const approvedPosts = async (req, res) => {
         attachments: [
           {
             filename: "offer letter",
-            path: "D:/codingfile/MyntraMvp/Job Offer Letter Professional Doc in White Grey Bare Minimal Style (1).pdf",
+            path: "D:/codingfile/MyntraMvp/demo.pdf",
           },
         ],
       });
@@ -892,7 +890,6 @@ const getProductAll = async (req, res, next) => {
         result: results,
         count: countresult[0].count,
       });
-      // console.log(countresult);
     }
   } catch (error) {
     res.status(500).send({
@@ -902,49 +899,86 @@ const getProductAll = async (req, res, next) => {
     //   console.log(error);
   }
 };
-//users routes
-router.get("/v1/users/login", userLogin);
-router.post("/v1/users/userLoginOtp", userLoginOtp);
-router.post("/v1/users/forgetpassword", forgetpassword);
-router.post("/v1/users/resetpassword", resetpassword);
-router.get("/v1/user/:userid", middleware, CheckAccess, getUser);
-router.get("/v1/users", middleware, CheckAccess, getallUser);
-//wishlist each user
-router.get("/v1/wishtlist/:id", userProduct);
-router.post("/v1/wishlist", addWishlist);
-router.put("/v1/wishlist", updateWishlist);
-router.delete("/v1/wishlist", deleteWishlist);
+const brandsAdd = async (req, res, next) => {
+  try {
+    const supplierSchema = Joi.object({
+      companyName: Joi.string().min(3).max(255).required(),
+      companyAddress: Joi.string().max(255).required(),
+      companyPhone: Joi.string().min(7).max(15).required(),
+      companyEmail: Joi.string().email().required(),
+      website: Joi.string().uri().optional(),
+      contactPerson: Joi.string().max(255).optional(),
+      paymentTerms: Joi.string().max(50).optional(),
+    });
+    const { error } = supplierSchema.validate(req.body);
+    if (error) {
+      return res
+        .status(400)
+        .send({ error: true, message: error.details[0].message });
+    }
 
-//category
-router.get("/v1/categorywithproduct/:id", getCategoryWithSubcategoryProductAll);
+    const {
+      companyName,
+      companyAddress,
+      companyPhone,
+      companyEmail,
+      website,
+      contactPerson,
+      paymentTerms,
+    } = req.body;
 
-//subcategory
-router.get("/v1/subcategorywithproduct/:id", getSubcategorywithProductAll);
+    const query =
+      "INSERT INTO suppliers (companyName, companyAddress, companyPhone, companyEmail, website, contactPerson, paymentTerms) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    const [companyAdd] = await connection
+      .promise()
+      .execute(query, [
+        companyName,
+        companyAddress,
+        companyPhone,
+        companyEmail,
+        website,
+        contactPerson,
+        paymentTerms,
+      ]);
 
-//product
-router.get("/v1/productAll", getProductAll);
-router.get("/v1/product/:productId", getProductId);
-// this getproduct contains filter and sorting
-router.get("/v1/Allproduct", getProduct);
+    if (companyAdd.affectedRows == 1) {
+      res
+        .status(201)
+        .send({
+          success: true,
+          message: "New supplier has been created successfully.",
+        });
+    } else {
+      res.status(404).send({ message: "Not created supplier", result: result });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal error" });
+  }
+};
+const brandsGetAll = async (req,res,next) =>{
+  try {
+    const brandGet = "select * from suppliers";
 
-//posts
-router.get("/v1/userposts", userposts);
-router.get("/v1/singleuserposts/:user_id", SingleUserPosts);
-router.post("/v1/userposts", addPosts);
-//bulk insert
-router.post("/v1/bulkuserposts", addBulkPosts);
-router.put("/v1/userposts", updatePosts);
-router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
-//user posts admin approval
-router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
+    const [brandGetresult] = await connection.promise().execute(brandGet);
+    
+    if (!brandGetresult || brandGetresult.length === 0) {
+      res.status(404).send({ message: "No suppliers found " });
+    } else {
+      res.status(200).send({
+        success:true,
+        message: "suppliers list ",
+        result: brandGetresult,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({success:false,message:"Internal server error"});
+  }
 
-router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
-router.post(
-  "/v1/generatecertificate",
-  upload.array("files", 2),
-  middleware,
-  CheckAccess,
-  generatecertificate
-);
-// middleware,CheckAccess,
-module.exports = router;
+}
+
+module.exports  = {getProduct,userProduct,getProductId,getUser,addWishlist,updateWishlist,deleteWishlist,
+  userLogin,userLoginOtp,getallUser,forgetpassword,resetpassword,userposts,addPosts,updatePosts,
+  deleteUserPosts,SingleUserPosts,addBulkPosts,approvedPosts,storage,upload,UploadExcel
+  ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,getProductAll,brandsAdd,brandsGetAll}
