@@ -11,6 +11,30 @@ const { transporter } = require("../mailer/mail");
 const Joi = require("joi");
 require("dotenv").config();
 
+const userGetAll = async (req, res) => {
+  try {
+    const strquery = "SELECT *  FROM users WHERE is_active = 1 ;";
+    const countsquery =
+      "SELECT COUNT(*) as total_user FROM users  WHERE is_active = 1  ; ";
+
+    const [result] = await connection.promise().query(strquery);
+    const [resultcount] = await connection.promise().query(countsquery);
+    if (result.length === 0) {
+      res.status(400).send({ message: "No user found !" });
+    } else {
+      res.status(200).send({
+        message: "Here are the users",
+        result: result,
+        Total: resultcount,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).send({ message: "Internal server error", result: error });
+  }
+};
+
 const getProduct = async (req, res) => {
   try {
     const { sortbyhigh, filters, startprice, endprice } = req.query;
@@ -872,6 +896,55 @@ const getSubcategorywithProductAll = async (req, res, next) => {
     //   console.log(error);
   }
 };
+
+const addCategory = async (req,res,next) =>
+{   
+  try {
+    const { name	,type	,	is_active } = req.body;
+ 
+    let bulkdata = req.body;
+    if (!Array.isArray(bulkdata) || bulkdata.length === 0) {
+      return res.status(400).send({ message: "Invalid request " });
+    }
+    const values = bulkdata.map(post => [post.name, post.type, post.is_active]);
+   
+    const sqlquery =
+      "insert into categories(name	,type	,	is_active) values ? ";
+    const [result] = await connection.promise().query(sqlquery, [values]);
+
+    if (result.affectedRows == 0) {
+      res.status(200).send({ message: "not created" });
+    } else {
+      res.status(201).send({ message: "category added successfully", result: result });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "internal error" });
+  }
+}
+const  addSubcategory = async (req,res,next) =>
+{
+  try {
+    const {id, subcategoryname,CategoryID } = req.body;
+ 
+    if (!req.body) {
+      return res.status(400).send({ message: "Empty request body" })
+    }
+   
+    const sqlquery =
+   " INSERT INTO subcategories (id,subcategoryname, CategoryID) VALUES (?, ?,?)" ;
+    const [result] = await connection.promise().query(sqlquery, [id,subcategoryname,CategoryID]);
+
+    if (result.affectedRows == 0) {
+      res.status(200).send({ message: "not created" });
+    } else {
+      res.status(201).send({ message: "Subcategory added successfully", result: result });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "internal error" });
+  }
+}
 const getProductAll = async (req, res, next) => {
   try {
     const sqlquery = `select *  from products`;
@@ -981,4 +1054,5 @@ const brandsGetAll = async (req,res,next) =>{
 module.exports  = {getProduct,userProduct,getProductId,getUser,addWishlist,updateWishlist,deleteWishlist,
   userLogin,userLoginOtp,getallUser,forgetpassword,resetpassword,userposts,addPosts,updatePosts,
   deleteUserPosts,SingleUserPosts,addBulkPosts,approvedPosts,storage,upload,UploadExcel
-  ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,getProductAll,brandsAdd,brandsGetAll}
+  ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,
+  getProductAll,brandsAdd,brandsGetAll,addCategory,addSubcategory,userGetAll}

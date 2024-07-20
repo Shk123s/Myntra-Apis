@@ -1,5 +1,5 @@
 {  "scripts": {
-  "start":"node index.js"
+  "start":"nodemon index.js"
 },
   "dependencies": {
     "@grammyjs/menu": "^1.2.1",
