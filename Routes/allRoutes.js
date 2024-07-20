@@ -2,11 +2,13 @@ const express = require("express");
 const  {getProduct,userProduct,getProductId,getUser,addWishlist,updateWishlist,deleteWishlist,
     userLogin,userLoginOtp,getallUser,forgetpassword,resetpassword,userposts,addPosts,updatePosts,
     deleteUserPosts,SingleUserPosts,addBulkPosts,approvedPosts,storage,upload,UploadExcel
-    ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,getProductAll,brandsAdd,brandsGetAll} = require("../Controller/myntra");
+    ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,getProductAll,
+    brandsAdd,brandsGetAll,addCategory,addSubcategory,userGetAll} = require("../Controller/myntra");
 const router = express.Router();
 const { CheckAccess, middleware } = require("../Middleware/checkAccess");
 
 //users routes
+router.get("/v1/userGetAll", userGetAll);
 router.get("/v1/users/login", userLogin);
 router.post("/v1/users/userLoginOtp", userLoginOtp);
 router.post("/v1/users/forgetpassword", forgetpassword);
@@ -21,9 +23,11 @@ router.delete("/v1/wishlist", deleteWishlist);
 
 //category
 router.get("/v1/categorywithproduct/:id", getCategoryWithSubcategoryProductAll);
+router.post("/v1/AddCategory", addCategory);
 
 //subcategory
 router.get("/v1/subcategorywithproduct/:id", getSubcategorywithProductAll);
+router.post("/v1/addSubcategory", addSubcategory);
 
 //product
 router.get("/v1/productAll", getProductAll);
