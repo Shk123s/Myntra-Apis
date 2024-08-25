@@ -149,6 +149,103 @@ from products  left join  product_sizes    on products.product_id = product_size
     console.log(error);
   }
 };
+const storage2 = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./src/uploads");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+upload = multer({ storage: storage2 });
+
+// const ExcelJS = require('exceljs');
+// const workbook = new ExcelJS.Workbook();
+// const data = await workbook.xlsx.readFile('./test.xlsx');
+
+// const worksheet = workbook.worksheets[0];
+// for (const image of worksheet.getImages()) {
+//   console.log('processing image row', image.range.tl.nativeRow, 'col', image.range.tl.nativeCol, 'imageId', image.imageId);
+//   // fetch the media item with the data (it seems the imageId matches up with m.index?)
+//   const img = workbook.model.media.find(m => m.index === image.imageId);
+//   fs.writeFileSync(`${image.range.tl.nativeRow}.${image.range.tl.nativeCol}.${img.name}.${img.extension}`, img.buffer);
+// }
+const BulkProductAdd = async (req,res) =>{
+  try {
+    // const allowedFileTypes = [
+    //   "application/vnd.ms-excel",
+    //   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    //   "text/csv",
+    // ];
+    // if (!req.file) {
+    //   res.status(400).send({ message: `Excel File required ` });
+    // } else if (!allowedFileTypes.includes(req.file.mimetype)) {
+    //   res.status(400).send({
+    //     message: "Invalid file type. Allowed types: Excel (csv,xls, xlsx).",
+    //   });
+    // } else {
+
+      const objects = [];
+
+      function csv_to_array_of_objects(csv_file) {
+        return new Promise((resolve, reject) => {
+          fs.createReadStream(csv_file)
+            .pipe(csv())
+            .on("data", (row) => {
+              objects.push(row);
+            })
+            .on("end", () => {
+              resolve(objects);
+            })
+            .on("error", (error) => {
+              reject(error);
+            });
+        });
+       }
+
+      csv_to_array_of_objects(req.file.path)
+      .then((objects) => {
+        const bulkdata = objects;
+        const values = bulkdata.map((obj) => {
+      
+          // Assume image is the filename and generate URL
+          const imageUrl = path.join('uploads', obj.image);
+         console.log(imageUrl)
+          return [
+            obj.name,
+            obj.description,
+            obj.type,
+            parseFloat(obj.price),
+            parseFloat(obj.discount),
+            parseFloat(obj.rating),
+            parseInt(obj.total_rating),
+            imageUrl,  // Use the generated URL for the image
+            parseInt(obj.size_id),
+            parseInt(obj.SubCategoryID)
+          ];
+        });
+        return console.log("s")
+        const sqlquery = "INSERT INTO products (name, description, type, price, discount, rating, total_rating, image, size_id, SubCategoryID) VALUES ?";
+  
+        return connection.promise().query(sqlquery, [values]);
+      })
+      .then(([result]) => {
+        if (result.affectedRows == 0) {
+          res.status(200).send({ message: 'not created' });
+        } else {
+          res.status(200).send({ message: 'Done', result: result });
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+        res.status(500).send({ message: 'Error processing file' });
+      });
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "internal error" });
+  }
+}
 const getUser = async (req, res) => {
   try {
     const { userid } = req.params;
@@ -1055,4 +1152,4 @@ module.exports  = {getProduct,userProduct,getProductId,getUser,addWishlist,updat
   userLogin,userLoginOtp,getallUser,forgetpassword,resetpassword,userposts,addPosts,updatePosts,
   deleteUserPosts,SingleUserPosts,addBulkPosts,approvedPosts,storage,upload,UploadExcel
   ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,
-  getProductAll,brandsAdd,brandsGetAll,addCategory,addSubcategory,userGetAll}
+  getProductAll,brandsAdd,brandsGetAll,addCategory,addSubcategory,userGetAll,BulkProductAdd}

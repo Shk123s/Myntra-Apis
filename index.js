@@ -12,7 +12,7 @@ app.use(morgan('combined', {
   stream: fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' }) // Log to a file
 }));
 
-app.get("/", (req, res) => res.json("Backend is up now!"));
+app.get("/", (req, res) => res.send("Backend is up now!"));
 app.use('/',allroutes);
 
 

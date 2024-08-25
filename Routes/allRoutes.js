@@ -3,7 +3,7 @@ const  {getProduct,userProduct,getProductId,getUser,addWishlist,updateWishlist,d
     userLogin,userLoginOtp,getallUser,forgetpassword,resetpassword,userposts,addPosts,updatePosts,
     deleteUserPosts,SingleUserPosts,addBulkPosts,approvedPosts,storage,upload,UploadExcel
     ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,getProductAll,
-    brandsAdd,brandsGetAll,addCategory,addSubcategory,userGetAll} = require("../Controller/myntra");
+    brandsAdd,brandsGetAll,addCategory,addSubcategory,userGetAll,BulkProductAdd} = require("../Controller/myntra");
 const router = express.Router();
 const { CheckAccess, middleware } = require("../Middleware/checkAccess");
 
@@ -34,6 +34,7 @@ router.get("/v1/productAll", getProductAll);
 router.get("/v1/product/:productId", getProductId);
 // this getproduct contains filter and sorting
 router.get("/v1/Allproduct", getProduct);
+router.post("/v1/BulkProductAdd", upload.single('file'),BulkProductAdd);
 
 //posts
 router.get("/v1/userposts", userposts);
