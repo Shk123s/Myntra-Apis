@@ -1,67 +1,38 @@
-const express = require("express");
-const connection = require("./database");
-const router = express.Router();
-const bodyParser = require("body-parser");
-router.use(bodyParser.json({ type: "routerlication/json" }));
-const nodemailer = require("nodemailer");
+const connection = require("../database");
 const multer = require("multer");
 const reader = require("xlsx");
 const path = require("path");
 const moment = require("moment");
 const Jimp = require("jimp");
 const fs = require("fs");
+const { CheckRole } = require("../Middleware/checkRole");
 const csv = require("csv-parser");
-require('dotenv').config()
+const { transporter } = require("../mailer/mail");
+const Joi = require("joi");
+require("dotenv").config();
 
-Roles = {
-  Admin: 1,
-  Hr: 2,
-  Employee: 3,
-  Intern: 4,
-};
-//for email
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // Use `true` for port 465, `false` for all other ports
-  auth: {
-    user: process.env.USER_NAME,
-    pass:process.env.USER_PASS,
-  },
-});
-const CheckRole = (req, res, Role) => {
-  // console.log("Role");
-  if (Role[0].is_role === 1) {
-    // console.log("object");
-    res.status(200).send({
-      message: "Welcome back admin",
-      result: Role,
-    });
-  } else if (Role[0].is_role === 2) {
-    // console.log("object");
-    res.status(200).send({
-      message: "Welcome back Hr",
-      result: Role,
-    });
-  } else if (Role[0].is_role === 3) {
-    // console.log("object");
-    res.status(200).send({
-      message: "Welcome back emoloyee",
-      result: Role,
-    });
-  } else if (Role[0].is_role === 4) {
-    res.status(200).send({
-      message: "Welcome back Intern",
-      result: Role,
-    });
-  } else {
-    res.status(200).send({
-      message: "Login successfully",
-      result: Role,
-    });
+const userGetAll = async (req, res) => {
+  try {
+    const strquery = "SELECT *  FROM users WHERE is_active = 1 ;";
+    const countsquery =
+      "SELECT COUNT(*) as total_user FROM users  WHERE is_active = 1  ; ";
+
+    const [result] = await connection.promise().query(strquery);
+    const [resultcount] = await connection.promise().query(countsquery);
+    if (result.length === 0) {
+      res.status(400).send({ message: "No user found !" });
+    } else {
+      res.status(200).send({
+        message: "Here are the users",
+        result: result,
+        Total: resultcount,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).send({ message: "Internal server error", result: error });
   }
-  // console.log("object")
 };
 
 const getProduct = async (req, res) => {
@@ -178,6 +149,103 @@ from products  left join  product_sizes    on products.product_id = product_size
     console.log(error);
   }
 };
+const storage2 = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./src/uploads");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+upload = multer({ storage: storage2 });
+
+// const ExcelJS = require('exceljs');
+// const workbook = new ExcelJS.Workbook();
+// const data = await workbook.xlsx.readFile('./test.xlsx');
+
+// const worksheet = workbook.worksheets[0];
+// for (const image of worksheet.getImages()) {
+//   console.log('processing image row', image.range.tl.nativeRow, 'col', image.range.tl.nativeCol, 'imageId', image.imageId);
+//   // fetch the media item with the data (it seems the imageId matches up with m.index?)
+//   const img = workbook.model.media.find(m => m.index === image.imageId);
+//   fs.writeFileSync(`${image.range.tl.nativeRow}.${image.range.tl.nativeCol}.${img.name}.${img.extension}`, img.buffer);
+// }
+const BulkProductAdd = async (req,res) =>{
+  try {
+    // const allowedFileTypes = [
+    //   "application/vnd.ms-excel",
+    //   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    //   "text/csv",
+    // ];
+    // if (!req.file) {
+    //   res.status(400).send({ message: `Excel File required ` });
+    // } else if (!allowedFileTypes.includes(req.file.mimetype)) {
+    //   res.status(400).send({
+    //     message: "Invalid file type. Allowed types: Excel (csv,xls, xlsx).",
+    //   });
+    // } else {
+
+      const objects = [];
+
+      function csv_to_array_of_objects(csv_file) {
+        return new Promise((resolve, reject) => {
+          fs.createReadStream(csv_file)
+            .pipe(csv())
+            .on("data", (row) => {
+              objects.push(row);
+            })
+            .on("end", () => {
+              resolve(objects);
+            })
+            .on("error", (error) => {
+              reject(error);
+            });
+        });
+       }
+
+      csv_to_array_of_objects(req.file.path)
+      .then((objects) => {
+        const bulkdata = objects;
+        const values = bulkdata.map((obj) => {
+      
+          // Assume image is the filename and generate URL
+          const imageUrl = path.join('uploads', obj.image);
+         console.log(imageUrl)
+          return [
+            obj.name,
+            obj.description,
+            obj.type,
+            parseFloat(obj.price),
+            parseFloat(obj.discount),
+            parseFloat(obj.rating),
+            parseInt(obj.total_rating),
+            imageUrl,  // Use the generated URL for the image
+            parseInt(obj.size_id),
+            parseInt(obj.SubCategoryID)
+          ];
+        });
+        return console.log("s")
+        const sqlquery = "INSERT INTO products (name, description, type, price, discount, rating, total_rating, image, size_id, SubCategoryID) VALUES ?";
+  
+        return connection.promise().query(sqlquery, [values]);
+      })
+      .then(([result]) => {
+        if (result.affectedRows == 0) {
+          res.status(200).send({ message: 'not created' });
+        } else {
+          res.status(200).send({ message: 'Done', result: result });
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+        res.status(500).send({ message: 'Error processing file' });
+      });
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "internal error" });
+  }
+}
 const getUser = async (req, res) => {
   try {
     const { userid } = req.params;
@@ -189,9 +257,9 @@ const getUser = async (req, res) => {
       "select name, phone_no ,email,password,is_active from users where user_id=?";
     const [result] = await connection.promise().query(strquery, [userid]);
     if (result.length === 0) {
-      res.status(200).send({ message: "no user found" });
+      res.status(404).send({ message: "no user found" });
     } else {
-      res.status(500).send({ message: "user found", result: result });
+      res.status(200).send({ message: "user found", result: result });
     }
   } catch (error) {
     console.log(error);
@@ -224,7 +292,6 @@ const addWishlist = async (req, res) => {
 };
 const updateWishlist = async (req, res) => {
   try {
-    // console.log(req.params)
     const { user_id, product_id, quantity } = req.body;
 
     if (!user_id || !product_id || !quantity) {
@@ -283,30 +350,78 @@ const deleteWishlist = async (req, res) => {
 const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      res.status(400).send({
-        message: "missing parameter",
+
+    const userLogin  = Joi.object({
+      email: Joi.string().required().messages({
+        'any.required': 'email required ',
+        'string.empty': 'missing parameter',
+      }),
+      password: Joi.string().required().messages({
+        'any.required': 'password required ',
+        'string.empty': 'missing parameter',
+      }),
+      
+    });
+    const { error } = userLogin.validate(req.body);
+    if (error) {
+      return res.status(400).send({
+        message: error.details[0].message,
       });
-    } else {
-      const sqlquery = `select email,password,is_role from users where email=? and password =? `;
-      // console.log("sql")
-      const [results] = await connection
-        .promise()
-        .execute(sqlquery, [email, password]);
-      // console.log(results);
-      if (results.length === 0) {
-        return res.status(500).send({ message: "Invalid credentails" });
-      }
-      if (results) {
-        return CheckRole(req, res, results);
-      }
+    }
+    const sqlquery = `select email,password,is_role from users where email=? and password =? `;
+    const [results] = await connection.promise().query(sqlquery, [email, password]);
+    if (results.length === 0 || results === null) {
+      return res.status(400).send({
+        message: "Invalid credentials",
+      });
+    }
+    const userEmail = results[0].email;
+    const genrateotp = Math.floor(Math.floor(Math.random() * 8888 + 1111));
+    const info = await transporter.sendMail({
+      from: "shoppinganytime18@gmail.com",
+      to: userEmail,
+      subject: "Otp for Login",
+      html: `<h1> Otp : ${genrateotp.toString()}</h1>`,
+    });
+    let updateOtp = `update users set  otp=? where  email =? `;
+    const [updatedOtp] = await connection.promise().execute(updateOtp, [genrateotp, userEmail]);
+      if (info.accepted.length > 0) {
+        console.log(`Message sent to ${userEmail}: %s`,"this is id ", info.messageId);
+        const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+        // Log the IP address
+        console.log('User IP Address:', userIp);
+        return res.status(200).send({
+          message: `OTP sent to ${userEmail}`,
+        });
+      } else {
+        console.log(`Email sending failed for ${userEmail}`);
+        return res.status(200).send({
+          message: `Email sending failed for ${userEmail}`,
+        });
     }
   } catch (error) {
+    console.log(error)
     res.status(500).send({
       message: "Internal server error",
       error,
     });
-    // console.log(error);
+  }
+};
+const userLoginOtp = async (req, res) => {
+  const { otp } = req.body;
+  let queryStrngotp = `select email,password,is_role from users where  otp =? `;
+  const [matchedotp] = await connection.promise().query(queryStrngotp, [otp]);
+  const userDetails = {
+    email: matchedotp[0].email,
+    password: matchedotp[0].password,
+  };
+  if (matchedotp) {
+    return CheckRole(res, matchedotp[0].is_role, userDetails);
+  } else {
+    res.status(401).send({
+      message: "Invalid otp",
+    });
   }
 };
 const getallUser = async (req, res) => {
@@ -315,9 +430,9 @@ const getallUser = async (req, res) => {
       "select name, phone_no ,email,password,is_active from users ";
     const [result] = await connection.promise().query(strquery);
     if (result.length === 0) {
-      res.status(200).send({ message: "no user found" });
+      res.status(404).send({ message: "no user found" });
     } else {
-      res.status(500).send({ message: "user found", result: result });
+      res.status(200).send({ message: "user found", result: result });
     }
   } catch (error) {
     console.log(error);
@@ -542,9 +657,7 @@ const addBulkPosts = async (req, res) => {
 
 const approvedPosts = async (req, res) => {
   try {
-    // console.log(req);
-    // const {email} = req.headers
-    // console.log(req.headers.email);
+   
     const { id, userid } = req.body;
     if (!id && !userid) {
       res.status(406).send({
@@ -575,7 +688,7 @@ const approvedPosts = async (req, res) => {
         attachments: [
           {
             filename: "offer letter",
-            path: "D:/codingfile/MyntraMvp/Job Offer Letter Professional Doc in White Grey Bare Minimal Style (1).pdf",
+            path: "D:/codingfile/MyntraMvp/demo.pdf",
           },
         ],
       });
@@ -624,11 +737,9 @@ const UploadExcel = async (req, res) => {
     if (!req.file) {
       res.status(400).send({ message: `Excel File required ` });
     } else if (!allowedFileTypes.includes(req.file.mimetype)) {
-      res
-        .status(400)
-        .send({
-          message: "Invalid file type. Allowed types: Excel (csv,xls, xlsx).",
-        });
+      res.status(400).send({
+        message: "Invalid file type. Allowed types: Excel (csv,xls, xlsx).",
+      });
     } else {
       const objects = [];
 
@@ -693,43 +804,6 @@ const UploadExcel = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "internal error" });
-  }
-};
-const middleware = (req, res, next) => {
-  const { token } = req.headers;
-  const user_id = 4;
-  console.log(user_id, token);
-
-  if (user_id && token === process.env.JWT_KEY) {
-    next();
-  } else {
-    res.status(401).send({ message: "Unauthorized" });
-  }
-};
-const CheckAccess = async (req, res, next) => {
-  const { user_id } = req.query;
-  if (!user_id) {
-    res.status(403).send({
-      message: "No user_id provided",
-    });
-  } else {
-    const checkadmin = "select  is_role from users where user_id =?;";
-    const [result] = await connection.promise().execute(checkadmin, [user_id]);
-    // console.log(result.length)
-    if (result.length === 0) {
-      res.status(403).send({
-        message: "No userid is found",
-        result: result,
-      });
-    } else if (result[0].is_role === 1) {
-      console.log("admin");
-      next();
-    } else {
-      res.status(403).send({
-        message: "Forbidden",
-        result: "oops! Not an admin",
-      });
-    }
   }
 };
 
@@ -817,12 +891,19 @@ const generatecertificate = async (req, res, next) => {
 
 const getCategoryWithSubcategoryProductAll = async (req, res, next) => {
   try {
+    const getCategoryWithSubcategoryProductAll = Joi.object({
+      id: Joi.string().required().messages({
+        "any.required": "CategoryId required ",
+        "string.empty": "missing parameter",
+      }),
+    });
+    const { error } = getCategoryWithSubcategoryProductAll.validate(req.params);
     //* Category id passed
     const { id } = req.params;
 
-    if (!req.params.id) {
-      res.status(400).send({
-        message: "missing parameter",
+    if (error) {
+      return res.status(400).send({
+        message: error.details[0].message,
       });
     } else {
       const sqlquery = `select *  from categories 
@@ -835,12 +916,11 @@ const getCategoryWithSubcategoryProductAll = async (req, res, next) => {
       let finalcategory = [];
       let finalproduct = [];
       results.forEach((data) => {
-        console.log(data)
         const subCategory = {
           SubCategoryID: data.SubCategoryID,
           subcategoryName: data.subcategoryname,
         };
-        finalcategory.push(subCategory); 
+        finalcategory.push(subCategory);
         const product = {
           id: data.product_id,
           name: data.name,
@@ -852,21 +932,32 @@ const getCategoryWithSubcategoryProductAll = async (req, res, next) => {
         };
         finalproduct.push(product);
       });
-      if (!finalcategory || finalcategory.length==0 || !finalproduct || finalproduct.length == 0 ) {
-        res.status(409).send({success:false,message:"No product found!"});
+      if (
+        !finalcategory ||
+        finalcategory.length == 0 ||
+        !finalproduct ||
+        finalproduct.length == 0
+      ) {
+        res
+          .status(409)
+          .send({
+            success: false,
+            message: "category with this subcategory No product found!",
+          });
+      } else {
+        res.status(200).send({
+          message: "category with subcategory and product list ",
+          subCategory: finalcategory,
+          product: finalproduct,
+        });
       }
-      res.status(200).send({
-        message: "category with subcategory and product list ",
-        subCategory: finalcategory,
-        product: finalproduct,
-      });
     }
   } catch (error) {
+    console.log(error);
     res.status(500).send({
       message: "Internal server error",
       error,
     });
-      console.log(error);
   }
 };
 const getSubcategorywithProductAll = async (req, res, next) => {
@@ -890,11 +981,10 @@ const getSubcategorywithProductAll = async (req, res, next) => {
           message: "subcategory and product list ",
 
           result: results,
-          Toatalcount:results.length
+          Toatalcount: results.length,
         });
       }
     }
-  
   } catch (error) {
     res.status(500).send({
       message: "Internal server error",
@@ -903,6 +993,55 @@ const getSubcategorywithProductAll = async (req, res, next) => {
     //   console.log(error);
   }
 };
+
+const addCategory = async (req,res,next) =>
+{   
+  try {
+    const { name	,type	,	is_active } = req.body;
+ 
+    let bulkdata = req.body;
+    if (!Array.isArray(bulkdata) || bulkdata.length === 0) {
+      return res.status(400).send({ message: "Invalid request " });
+    }
+    const values = bulkdata.map(post => [post.name, post.type, post.is_active]);
+   
+    const sqlquery =
+      "insert into categories(name	,type	,	is_active) values ? ";
+    const [result] = await connection.promise().query(sqlquery, [values]);
+
+    if (result.affectedRows == 0) {
+      res.status(200).send({ message: "not created" });
+    } else {
+      res.status(201).send({ message: "category added successfully", result: result });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "internal error" });
+  }
+}
+const  addSubcategory = async (req,res,next) =>
+{
+  try {
+    const {id, subcategoryname,CategoryID } = req.body;
+ 
+    if (!req.body) {
+      return res.status(400).send({ message: "Empty request body" })
+    }
+   
+    const sqlquery =
+   " INSERT INTO subcategories (id,subcategoryname, CategoryID) VALUES (?, ?,?)" ;
+    const [result] = await connection.promise().query(sqlquery, [id,subcategoryname,CategoryID]);
+
+    if (result.affectedRows == 0) {
+      res.status(200).send({ message: "not created" });
+    } else {
+      res.status(201).send({ message: "Subcategory added successfully", result: result });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "internal error" });
+  }
+}
 const getProductAll = async (req, res, next) => {
   try {
     const sqlquery = `select *  from products`;
@@ -921,7 +1060,6 @@ const getProductAll = async (req, res, next) => {
         result: results,
         count: countresult[0].count,
       });
-      // console.log(countresult);
     }
   } catch (error) {
     res.status(500).send({
@@ -931,42 +1069,87 @@ const getProductAll = async (req, res, next) => {
     //   console.log(error);
   }
 };
-//users routes
-router.get("/v1/users/login", userLogin);
-router.post("/v1/users/forgetpassword", forgetpassword);
-router.post("/v1/users/resetpassword", resetpassword);
-router.get("/v1/user/:userid", middleware, CheckAccess, getUser);
-router.get("/v1/users", middleware, CheckAccess, getallUser);
-//wishlist each user
-router.get("/v1/wishtlist/:id", userProduct);
-router.post("/v1/wishlist", addWishlist);
-router.put("/v1/wishlist", updateWishlist);
-router.delete("/v1/wishlist", deleteWishlist);
+const brandsAdd = async (req, res, next) => {
+  try {
+    const supplierSchema = Joi.object({
+      companyName: Joi.string().min(3).max(255).required(),
+      companyAddress: Joi.string().max(255).required(),
+      companyPhone: Joi.string().min(7).max(15).required(),
+      companyEmail: Joi.string().email().required(),
+      website: Joi.string().uri().optional(),
+      contactPerson: Joi.string().max(255).optional(),
+      paymentTerms: Joi.string().max(50).optional(),
+    });
+    const { error } = supplierSchema.validate(req.body);
+    if (error) {
+      return res
+        .status(400)
+        .send({ error: true, message: error.details[0].message });
+    }
 
-//category
-router.get("/v1/categorywithproduct/:id", getCategoryWithSubcategoryProductAll);
+    const {
+      companyName,
+      companyAddress,
+      companyPhone,
+      companyEmail,
+      website,
+      contactPerson,
+      paymentTerms,
+    } = req.body;
 
-//subcategory
-router.get("/v1/subcategorywithproduct/:id", getSubcategorywithProductAll);
+    const query =
+      "INSERT INTO suppliers (companyName, companyAddress, companyPhone, companyEmail, website, contactPerson, paymentTerms) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    const [companyAdd] = await connection
+      .promise()
+      .execute(query, [
+        companyName,
+        companyAddress,
+        companyPhone,
+        companyEmail,
+        website,
+        contactPerson,
+        paymentTerms,
+      ]);
 
-//product
-router.get("/v1/productAll", getProductAll);
-router.get("/v1/product/:productId", getProductId);
-// this getproduct contains filter and sorting 
-router.get("/v1/product", middleware, getProduct);
+    if (companyAdd.affectedRows == 1) {
+      res
+        .status(201)
+        .send({
+          success: true,
+          message: "New supplier has been created successfully.",
+        });
+    } else {
+      res.status(404).send({ message: "Not created supplier", result: result });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal error" });
+  }
+};
+const brandsGetAll = async (req,res,next) =>{
+  try {
+    const brandGet = "select * from suppliers";
 
-//posts
-router.get("/v1/userposts", userposts);
-router.get("/v1/singleuserposts/:user_id", SingleUserPosts);
-router.post("/v1/userposts", addPosts);
-//bulk insert
-router.post("/v1/bulkuserposts", addBulkPosts);
-router.put("/v1/userposts", updatePosts);
-router.delete("/v1/userpostsdelete/:id", CheckAccess, deleteUserPosts);
-//user posts admin approval
-router.put("/v1/approvalrequest", CheckAccess, approvedPosts);
+    const [brandGetresult] = await connection.promise().execute(brandGet);
+    
+    if (!brandGetresult || brandGetresult.length === 0) {
+      res.status(404).send({ message: "No suppliers found " });
+    } else {
+      res.status(200).send({
+        success:true,
+        message: "suppliers list ",
+        result: brandGetresult,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({success:false,message:"Internal server error"});
+  }
 
-router.post("/v1/uploadexcel", upload.single("file"), UploadExcel);
-router.post( "/v1/generatecertificate", upload.array("files", 2), middleware, CheckAccess, generatecertificate);
-// middleware,CheckAccess,
-module.exports = router;
+}
+
+module.exports  = {getProduct,userProduct,getProductId,getUser,addWishlist,updateWishlist,deleteWishlist,
+  userLogin,userLoginOtp,getallUser,forgetpassword,resetpassword,userposts,addPosts,updatePosts,
+  deleteUserPosts,SingleUserPosts,addBulkPosts,approvedPosts,storage,upload,UploadExcel
+  ,generatecertificate,getCategoryWithSubcategoryProductAll,getSubcategorywithProductAll,
+  getProductAll,brandsAdd,brandsGetAll,addCategory,addSubcategory,userGetAll,BulkProductAdd}
