@@ -2,18 +2,14 @@
   "scripts": {
     "start": "nodemon index.js",
     "eslint": "npx eslint ./",
-    "lint-staged": {
-      "**/*.{js,jsx,json}": [
-        "eslint . --fix",
-        "prettier --write ."
-      ]
-    },
-    "configure-husky": "npx husky install , npx husky add .husky/pre-commit \"npx --no-install lint-staged\"",
-    "husky": {
-      "hooks": {
-        "pre-commit": "lint-staged"
-      }
-    }
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ]
   },
   "dependencies": {
     "@grammyjs/menu": "^1.2.1",
@@ -48,6 +44,8 @@
   "devDependencies": {
     "@eslint/js": "^9.9.1",
     "eslint": "^9.9.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
     "globals": "^15.9.0",
     "husky": "^9.1.5",
     "lint-staged": "^15.2.9",
