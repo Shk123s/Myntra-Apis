@@ -349,6 +349,7 @@ const deleteWishlist = async (req, res) => {
 const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     const yeh = req.body;
     console.log(yeh);
 
