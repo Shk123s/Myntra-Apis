@@ -174,3 +174,31 @@ CREATE TABLE IF NOT EXISTS `wishlists` (
     REFERENCES `products` (`product_id`)
     ON DELETE CASCADE
 );
+
+    CREATE TABLE transactions (
+    transaction_id VARCHAR(255) NOT NULL,
+ --    user_id INT NOT NULL,
+    user_name VARCHAR(255) NOT NULL,
+	user_phone VARCHAR(255) NOT NULL,
+	user_email VARCHAR(255) NOT NULL,
+    subscription_id VARCHAR(255) NOT NULL,
+    subscription_name VARCHAR(255) NOT NULL,
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    amount DECIMAL(10, 2) NOT NULL,
+    refunded_amount DECIMAL(10, 2) DEFAULT 0.00,
+    currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+    payment_method VARCHAR(50),
+   --  payment_gateway VARCHAR(50),
+ --    gateway_reference_id VARCHAR(255),
+    transaction_type VARCHAR(50) DEFAULT 'subscription',
+    status VARCHAR(50) DEFAULT 'pending',
+  --   description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    start_plan_date TIMESTAMP ,
+    end_plan_date TIMESTAMP
+    -- FOREIGN KEY (user_id) REFERENCES users(user_id),
+--     FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id)
+);
+
+drop table transactions;

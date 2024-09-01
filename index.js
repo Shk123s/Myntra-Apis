@@ -8,6 +8,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 app.use(bodyParser.json({ type: 'application/json' }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
   morgan('combined', {
     stream: fs.createWriteStream(path.join(__dirname, 'access.log'), {
@@ -16,10 +17,17 @@ app.use(
   })
 );
 
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+app.get('/', function (req, res) {
+  res.render('Home', {
+    key: process.env.Publishable_Key,
+  });
+});
 app.get('/', (req, res) => res.send('Backend is up now!'));
 app.use('/', allroutes);
 
-let port = process.env.PORT || 4000;
+let port = 4000;
 app.listen(port, () => {
-  console.log('3000 server started');
+  console.log(`${port} server started`);
 });
