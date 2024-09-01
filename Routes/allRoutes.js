@@ -35,6 +35,12 @@ const {
 } = require('../Controller/myntra');
 const router = express.Router();
 const { CheckAccess, middleware } = require('../Middleware/checkAccess');
+const {
+  payment,
+  success,
+  cancel,
+  refundPayment,
+} = require('../Controller/payment');
 
 //users routes
 router.get('/v1/userGetAll', userGetAll);
@@ -89,5 +95,12 @@ router.post(
   CheckAccess,
   generatecertificate
 );
+
+// payment integration
+router.post('/payment', payment);
+router.get('/success', success);
+router.get('/cancel', cancel);
+router.post('/v1/refund', refundPayment);
+
 // middleware,CheckAccess,
 module.exports = router;

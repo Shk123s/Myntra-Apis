@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+
+  <title>Payment Gateway</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Poppins", sans-serif;
+    }
+    h3 {
+      margin-top: 2rem;
+      font-family: "Open Sans", sans-serif;
+      font-optical-sizing: auto;
+      font-weight: 400; 
+      font-style: normal;
+      font-variation-settings: "wdth" 100;
+      text-align: center;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .pricing {
+      margin-top: 50px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .pricing-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 10px;
+      width: 100%;
+      border-radius: 5px;
+      box-shadow: 0 8px 16px 0px rgba(0, 0, 0, 0.1);
+      margin-left: 50px;
+    }
+
+    .pricing-card-heading {
+      padding: 10px;
+      font-size: 20px;
+      line-height: 24px;
+      font-weight: 400;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .pricing-card-heading-free {
+      background-color: #b8c4dc;
+      color: #000;
+    }
+
+    .pricing-card-heading-pro {
+      background: linear-gradient(
+        90deg,
+        rgba(255, 177, 195, 1) 0%,
+        rgba(255, 203, 112, 1) 100%
+      );
+      color: #fff;
+    }
+
+    .pricing-card-list {
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+      margin: 25px 0 45px 65px;
+    }
+
+    .pricing-card-list-item {
+      position: relative;
+    }
+
+    .icon-yes::before {
+      position: absolute;
+      left: -30px;
+      top: -5px;
+      display: inline-block;
+      content: "";
+      width: 20px;
+      height: 25px;
+      background: url("https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/png/check-4x.png") no-repeat;
+      background-size: 15px;
+      background-position: bottom center;
+      filter: invert(75%) sepia(27%) saturate(459%) hue-rotate(76deg) brightness(90%) contrast(88%);
+    }
+
+    .icon-no::before {
+      position: absolute;
+      left: -27px;
+      top: -5px;
+      display: inline-block;
+      content: "";
+      width: 20px;
+      height: 25px;
+      background: url("https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/png/plus-4x.png") no-repeat;
+      background-size: 15px;
+      background-position: bottom center;
+      filter: invert(45%) sepia(88%) saturate(908%) hue-rotate(312deg) brightness(90%) contrast(86%);
+      transform: rotate(45deg);
+    }
+
+    .icon-no {
+      color: #999;
+      text-decoration: line-through;
+    }
+    .pricing-card-btn {
+      width: 85%;
+      font-size: 16px;
+      padding: 15px;
+      margin-left: 7.5%;
+      border: 1px solid #27264b;
+      border-radius: 5px;
+      background-color: #fff;
+      color: #27264b;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: background-color 250ms ease-in-out;
+    }
+    .refund-card-btn {
+      position: absolute; /* Position the button absolutely */
+      top: 0;            /* Align to the top */
+      right: 0;          /* Align to the right */
+      margin-top: 30px;
+      margin-right: 30px;
+      font-size: 16px;
+      padding: 15px;
+      border: 1px solid #27264b;
+      border-radius: 5px;
+      background-color: #e1acac;
+      color: #27264b;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: background-color 250ms ease-in-out;
+    }
+
+    .pricing-card-btn:hover, .refund-card-btn:hover {
+      background-color: rgb(155, 155, 175);
+    }
+
+    .pricing-card-highlight .pricing-card-btn {
+      border: none;
+      color: #fff;
+      background-color: #27264b;
+    }
+
+    .pricing-card-highlight .pricing-card-btn:hover {
+      background-color: #9390db;
+    }
+
+    .pricing-card-price {
+      text-align: center;
+      font-size: 28px;
+      line-height: 28px;
+      font-weight: 500;
+      margin-bottom: 15px;
+    }
+
+    .pricing-card-price-text {
+      font-weight: 400;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h3>Welcome to Payment Gateway</h3>
+  <div class="container">
+    <div class="pricing">
+      <div class="pricing-card">
+        <h3 class="pricing-card-heading pricing-card-heading-free">FREE</h3>
+        <ul class="pricing-card-list">
+          <li class="pricing-card-list-item icon-yes">24 days only.</li>
+          <li class="pricing-card-list-item icon-yes">Limited features.</li>
+          <li class="pricing-card-list-item icon-no">Unlimited products.</li>
+          <li class="pricing-card-list-item icon-no">No ads.</li>
+          <li class="pricing-card-list-item icon-no">Customer support.</li>
+        </ul>
+        <p class="pricing-card-price">$20<span class="pricing-card-price-text">/mo</span></p>
+        <form action="/payment" method="post">
+          <input type="hidden" name="price_id" value="price_1PtN22P9iQtlLJGOGSRkaMvk">
+          <button class="pricing-card-btn">Buy</button>
+        </form>
+      </div>
+      <div class="pricing-card">
+        <h3 class="pricing-card-heading pricing-card-heading-pro">PRO</h3>
+        <ul class="pricing-card-list">
+          <li class="pricing-card-list-item icon-yes">31 days.</li>
+          <li class="pricing-card-list-item icon-yes">Unlimited features.</li>
+          <li class="pricing-card-list-item icon-yes">Unlimited products.</li>
+          <li class="pricing-card-list-item icon-yes">No ads.</li>
+          <li class="pricing-card-list-item icon-yes">Customer support.</li>
+        </ul>
+        <p class="pricing-card-price">$50<span class="pricing-card-price-text">/mo</span></p>
+        <form action="/payment" method="post">
+          <input type="hidden" name="price_id" value="price_1PtN6KP9iQtlLJGOFMxW7sb8">
+          <button class="pricing-card-btn">Buy</button>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Refund Button Section -->
+    <div class="refund-section" style="text-align: center; margin-top: 50px;">
+      <form action="/v1/refund" method="post" id="refundForm">
+        <input type="hidden" name="session_id" id="session_id">
+        <button type="submit" class="refund-card-btn">Request Refund</button>
+      </form>
+    </div>
+    
+    <script>
+     
+      document.addEventListener("DOMContentLoaded", function() {
+        const sessionId = getCookie("session_id");
+        const sessionInput = document.getElementById("session_id");
+        
+        if (sessionId) {
+          sessionInput.value = sessionId;
+        } else {
+          sessionInput.parentElement.style.display = "none"; 
+        }
+      });
+  
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+      }
+  
+      document.getElementById("refundForm").addEventListener("submit", function() {
+        clearCookie("session_id");
+      });
+  
+      function clearCookie(name) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      }
+    </script>
+</body>
+</html>

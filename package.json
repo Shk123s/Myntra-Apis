@@ -20,6 +20,7 @@
     "csv": "^6.3.8",
     "csv-parser": "^3.0.0",
     "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
     "geolocation": "^0.2.0",
@@ -37,6 +38,7 @@
     "path": "^0.12.7",
     "pg": "^8.12.0",
     "read-excel-file": "^5.7.1",
+    "stripe": "^16.9.0",
     "telegram-keyboard": "^2.3.5",
     "uuid": "^9.0.1",
     "xlsx": "^0.18.5"

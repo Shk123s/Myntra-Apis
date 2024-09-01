@@ -1,0 +1,12 @@
+    console.log("transaction_id:", result[0]?.id || "N/A", "\n",
+          "user_name:", result[0]?.customer_details?.name || "N/A", "\n",
+        "user_email:", result[0]?.customer_details?.email || "N/A", "\n",
+        "user_phone:", result[0]?.customer_details?.phone || "N/A", "\n",
+        "subscription_id:", result[0]?.subscription || "N/A", "\n",
+        "subscription_name:", result[1]?.data[0]?.description || "N/A", "\n",
+        "amount:", result[0]?.amount_total || "N/A", "\n",
+        "currency:", result[0]?.currency || "N/A", "\n",
+        "payment_method:", result[0]?.payment_method_types || "N/A", "\n",
+        "transaction_type:", result[0]?.mode || "N/A", "\n",
+        "status:", result[0]?.status || "N/A", "\n"
+      );
