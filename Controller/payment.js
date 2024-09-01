@@ -21,13 +21,13 @@ exports.payment = async (req, res) => {
         enabled: true,
       },
       success_url:
-        'http://localhost:4000/success?session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'http://localhost:4000/cancel',
+        'https://myntra-apis.onrender.com/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: 'https://myntra-apis.onrender.com/cancel',
     });
     res.redirect(session.url);
   } catch (error) {
     console.log(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server  error in payment' });
   }
 };
 
