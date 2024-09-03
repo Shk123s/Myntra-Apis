@@ -1,0 +1,47 @@
+<div class="jumbotron jumbotron-fluid">
+    <div class="container">
+        <h1>{{ post.title }}</h1>
+        <p id="post-body">{{ post.body }}</p>
+        <p id="actions">
+            <a class="btn btn-primary btn-lg" href="#" id="edit-btn" role="button">Edit</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    var postId = "{{ post._id }}";
+    var postContent;
+    var makeEditable = function (event) {
+        // capture the content of the post, then replace with editable textarea
+        postContent = $("#post-body").html();
+        var editableText = $('<textarea id="editable-post-body" class="form-control" />');
+        editableText.val(postContent);
+        $("#post-body").replaceWith(editableText);
+        editableText.focus();
+
+        var saveBtn = $('<a class="btn btn-primary btn-lg" id="save-btn" role="button">Save</a>');
+        var cancelBtn = $('<a class="btn btn-info btn-lg" id="cancel-btn" role="button">Cancel</a>');
+
+        saveBtn.click(function () {
+            // capture the new post content and send to backend
+            postContent = $("#editable-post-body").val();
+            axios.put("/posts/" + postId, { body: postContent });
+            restoreBody();
+        });
+        cancelBtn.click(restoreBody);
+        // replace "Edit" button with "Save" and "Cancel"
+        $("#actions").html([saveBtn, cancelBtn]);
+    };
+
+    $('#edit-btn').click(makeEditable);
+
+    var restoreBody = function() {
+        var postBody = $('<p id="post-body"></p>');
+        postBody.html(postContent);
+        $("#editable-post-body").replaceWith(postBody);
+        var editBtn = $('<a class="btn btn-primary btn-lg" href="#" id="edit-btn" role="button">Edit</a>');
+        editBtn.click(makeEditable);
+        $("#actions").html(editBtn);
+    };
+
+</script>

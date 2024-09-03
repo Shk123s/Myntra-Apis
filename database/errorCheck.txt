@@ -10,3 +10,10 @@
         "transaction_type:", result[0]?.mode || "N/A", "\n",
         "status:", result[0]?.status || "N/A", "\n"
       );
+
+
+
+           {{!-- {{!-- notification.onshow = function(event) {
+            console.log("Notification is shown!");
+        }; --}}
+            console.log("Notification should have been displayed:", notification); --}}
