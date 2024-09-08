@@ -2,9 +2,11 @@ const connection = require('../database');
 const multer = require('multer');
 const reader = require('xlsx');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 const moment = require('moment');
 const Jimp = require('jimp');
 const fs = require('fs');
+const bcrypt = require('bcrypt');
 const { CheckRole } = require('../Middleware/checkRole');
 const csv = require('csv-parser');
 const { transporter } = require('../mailer/mail');
@@ -20,9 +22,9 @@ const userGetAll = async (req, res) => {
     const [result] = await connection.promise().query(strquery);
     const [resultcount] = await connection.promise().query(countsquery);
     if (result.length === 0) {
-      res.status(400).send({ message: 'No user found !' });
+      return res.status(400).send({ message: 'No user found !' });
     } else {
-      res.status(200).send({
+      return res.status(200).send({
         message: 'Here are the users',
         result: result,
         Total: resultcount,
@@ -366,15 +368,22 @@ const userLogin = async (req, res) => {
         message: error.details[0].message,
       });
     }
+
     const sqlquery = `select email,password,is_role from users where email=? and password =? `;
     const [results] = await connection
       .promise()
       .query(sqlquery, [email, password]);
+    // const hasspassword =   results[0].password;
+    // const passedpassword = await bcrypt.compare(password,hasspassword);
     if (results.length === 0 || results === null) {
       return res.status(400).send({
         message: 'Invalid credentials',
       });
     }
+
+    // const token = jwt.sign({user_id:sqlquery[0].id,},"shhhhh");
+    //  console.log(passedpassword)
+
     const userEmail = results[0].email;
     const genrateotp = Math.floor(Math.floor(Math.random() * 8888 + 1111));
     const info = await transporter.sendMail({
@@ -418,12 +427,20 @@ const userLoginOtp = async (req, res) => {
   const { otp } = req.body;
   let queryStrngotp = `select email,password,is_role from users where  otp =? `;
   const [matchedotp] = await connection.promise().query(queryStrngotp, [otp]);
+  const token = jwt.sign({ user_id: matchedotp }, 'shhhhh');
+
   const userDetails = {
     email: matchedotp[0].email,
     password: matchedotp[0].password,
+    role: matchedotp[0].is_role,
+    token,
   };
   if (matchedotp) {
-    return CheckRole(res, matchedotp[0].is_role, userDetails);
+    res.cookie('token', token, {
+      httpOnly: true,
+      // maxAge: 3600000, // Cookie expiration time in milliseconds (1 hour)
+    });
+    return CheckRole(res, userDetails);
   } else {
     res.status(401).send({
       message: 'Invalid otp',

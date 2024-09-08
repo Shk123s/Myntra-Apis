@@ -1,16 +1,21 @@
 const connection = require('../database');
-
-exports.middleware = (req, res, next) => {
-  const { token } = req.headers;
-  const user_id = 4;
-  console.log(user_id, token);
-
-  if (user_id && token === process.env.JWT_KEY) {
-    next();
+const jwt = require('jsonwebtoken');
+exports.authenticated = (req, res, next) => {
+  const token = req.cookies.token; // Retrieve the token from cookies
+  console.log(token, 'token '); // Log the token for debugging
+  if (token) {
+    try {
+      const decodedToken = jwt.verify(token, 'shhhhh');
+      req.user = decodedToken;
+      next();
+    } catch (error) {
+      return res.status(401).send({ message: 'Invalid token' });
+    }
   } else {
-    res.status(401).send({ message: 'Unauthorized' });
+    return res.status(401).send({ message: 'No token provided' });
   }
 };
+
 exports.CheckAccess = async (req, res, next) => {
   const { user_id } = req.query;
   if (!user_id) {
