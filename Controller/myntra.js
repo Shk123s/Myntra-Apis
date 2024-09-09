@@ -433,14 +433,13 @@ const userLoginOtp = async (req, res) => {
     email: matchedotp[0].email,
     password: matchedotp[0].password,
     role: matchedotp[0].is_role,
-    token,
   };
   if (matchedotp) {
     res.cookie('token', token, {
       httpOnly: true,
-      // maxAge: 3600000, // Cookie expiration time in milliseconds (1 hour)
+      maxAge: 3600000, // Cookie expiration time in milliseconds (1 hour)
     });
-    return CheckRole(res, userDetails);
+    return CheckRole(res, userDetails, token);
   } else {
     res.status(401).send({
       message: 'Invalid otp',
