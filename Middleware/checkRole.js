@@ -1,19 +1,17 @@
-const { Roles } = require('../Utilis/Roles');
-
-exports.CheckRole = (res, Role, userDetails) => {
-  if (Role === 0) {
+exports.CheckRole = (res, userDetails) => {
+  if (userDetails.role === 0) {
     userDetails.role = 'superadmin';
     return res.status(200).send({
       message: 'Welcome back Superadmin',
       userDetails: userDetails,
     });
-  } else if (Role === 1) {
+  } else if (userDetails.role === 1) {
     userDetails.role = 'admin';
     return res.status(200).send({
       message: 'Welcome back admin',
       userDetails: userDetails,
     });
-  } else if (Role === 2) {
+  } else if (userDetails.role === 2) {
     userDetails.role = 'user';
     return res.status(200).send({
       message: 'Welcome back User',

@@ -3,12 +3,14 @@ const app = express();
 const allroutes = require('./Routes/allRoutes');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
 app.use(bodyParser.json({ type: 'application/json' }));
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(
   morgan('combined', {
     stream: fs.createWriteStream(path.join(__dirname, 'access.log'), {
@@ -27,7 +29,7 @@ app.get('/', function (req, res) {
 app.get('/', (req, res) => res.send('Backend is up now!'));
 app.use('/', allroutes);
 
-let port = 4000;
+let port = 3000;
 app.listen(port, () => {
   console.log(`${port} server started`);
 });

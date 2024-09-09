@@ -34,7 +34,11 @@ const {
   BulkProductAdd,
 } = require('../Controller/myntra');
 const router = express.Router();
-const { CheckAccess, middleware } = require('../Middleware/checkAccess');
+const {
+  CheckAccess,
+  middleware,
+  authenticated,
+} = require('../Middleware/checkAccess');
 const {
   payment,
   success,
@@ -43,13 +47,13 @@ const {
 } = require('../Controller/payment');
 
 //users routes
-router.get('/v1/userGetAll', userGetAll);
+router.get('/v1/userGetAll', authenticated, userGetAll);
 router.get('/v1/users/login', userLogin);
 router.post('/v1/users/userLoginOtp', userLoginOtp);
 router.post('/v1/users/forgetpassword', forgetpassword);
 router.post('/v1/users/resetpassword', resetpassword);
-router.get('/v1/user/:userid', middleware, CheckAccess, getUser);
-router.get('/v1/users', middleware, CheckAccess, getallUser);
+router.get('/v1/user/:userid', authenticated, CheckAccess, getUser);
+router.get('/v1/users', authenticated, CheckAccess, getallUser);
 //wishlist each user
 router.get('/v1/wishtlist/:id', userProduct);
 router.post('/v1/wishlist', addWishlist);
@@ -91,7 +95,7 @@ router.post('/v1/uploadexcel', upload.single('file'), UploadExcel);
 router.post(
   '/v1/generatecertificate',
   upload.array('files', 2),
-  middleware,
+  authenticated,
   CheckAccess,
   generatecertificate
 );
