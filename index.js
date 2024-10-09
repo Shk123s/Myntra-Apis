@@ -29,7 +29,7 @@ app.get('/', function (req, res) {
 app.get('/', (req, res) => res.send('Backend is up now!'));
 app.use('/', allroutes);
 
-let port = 3000;
+let port = 4000;
 app.listen(port, () => {
   console.log(`${port} server started`);
 });
