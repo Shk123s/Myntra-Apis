@@ -45,7 +45,12 @@ const {
   cancel,
   refundPayment,
 } = require('../Controller/payment');
+const { fetchAllRoles, addRoles } = require('../Controller/auth/role');
 
+//auth routess
+fetchAllRoles;
+router.get('/v1/getRoles', fetchAllRoles);
+router.post('/v1/addRoles', addRoles);
 //users routes
 router.get('/v1/userGetAll', authenticated, userGetAll);
 router.get('/v1/users/login', userLogin);

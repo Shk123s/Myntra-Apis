@@ -200,5 +200,64 @@ CREATE TABLE IF NOT EXISTS `wishlists` (
     -- FOREIGN KEY (user_id) REFERENCES users(user_id),
 --     FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id)
 );
+CREATE TABLE roles (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+DROP table ROLES;
+INSERT INTO roles (name, is_active) 
+VALUES 
+    ('admin', TRUE),
+    ('client', TRUE),
+    ('user', TRUE);
+
+
+CREATE TABLE permissions (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    is_active tinyint(1),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+INSERT INTO permissions (name, is_active)
+VALUES 
+    ('view', 1),
+    ('edit', 1),
+    ('delete', 1),
+    ('create', 1);
+SELECT * FROM dbmall.role_permission;
+
+CREATE TABLE role_permission (
+     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+     role_id BIGINT  NOT NULL,
+     FOREIGN KEY (role_id) REFERENCES roles(id),
+     permission_id BIGINT NOT NULL,
+     FOREIGN KEY (permission_id) REFERENCES permissions(id)
+);
+drop table role_permission;
+ -- role  permission -- 
+ -- 1 = admin , 2 = client  3  = user 
+ --  1 vieew  2 = edit 3 = delete 4 = create 
+
+INSERT INTO role_permission (role_id, permission_id)
+VALUES 
+    (1, 1), -- Admin role gets "view" permission
+    (1, 2), -- Admin role gets "edit" permission
+    (1, 3), -- Admin role gets "delete" permission
+    (1, 4), -- Admin role gets "create" permission
+    (2, 4), -- Client role gets "view" permission
+	(2, 2), -- Client role gets "edit" permission
+    (2, 4), -- Client role gets "delete" permission
+    (3, 1);-- User role gets "view" permission
+   
+
+drop table role_permission;
+
 
 drop table transactions;

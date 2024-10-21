@@ -1,4 +1,5 @@
 exports.Roles = {
-  Superadmin: 0,
-  Admin: 1,
+  admin: 1,
+  client: 2,
+  user: 3,
 };
