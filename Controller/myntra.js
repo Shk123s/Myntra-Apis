@@ -424,26 +424,31 @@ const userLogin = async (req, res) => {
   }
 };
 const userLoginOtp = async (req, res) => {
-  const { otp } = req.body;
-  let queryStrngotp = `select email,password,is_role from users where  otp =? `;
-  const [matchedotp] = await connection.promise().query(queryStrngotp, [otp]);
-  const token = jwt.sign({ user_id: matchedotp }, 'shhhhh');
+  try {
+    const { otp } = req.body;
+    let queryStrngotp = `select email,password,is_role from users where  otp =? `;
+    const [matchedotp] = await connection.promise().query(queryStrngotp, [otp]);
+    const token = jwt.sign(matchedotp[0], 'shhhhh');
 
-  const userDetails = {
-    email: matchedotp[0].email,
-    password: matchedotp[0].password,
-    role: matchedotp[0].is_role,
-  };
-  if (matchedotp) {
-    res.cookie('token', token, {
-      httpOnly: true,
-      maxAge: 3600000, // Cookie expiration time in milliseconds (1 hour)
-    });
-    return CheckRole(res, userDetails, token);
-  } else {
-    res.status(401).send({
-      message: 'Invalid otp',
-    });
+    const userDetails = {
+      email: matchedotp[0].email,
+      password: matchedotp[0].password,
+      role: matchedotp[0].is_role,
+    };
+    if (matchedotp) {
+      res.cookie('token', token, {
+        httpOnly: true,
+        maxAge: 3600000,
+      });
+      return CheckRole(res, userDetails, token);
+    } else {
+      res.status(401).send({
+        message: 'Invalid otp',
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: 'Internal server error.' });
   }
 };
 const getallUser = async (req, res) => {

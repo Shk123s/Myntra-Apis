@@ -35,8 +35,7 @@ const {
 } = require('../Controller/myntra');
 const router = express.Router();
 const {
-  CheckAccess,
-  middleware,
+  permissionMiddleware,
   authenticated,
 } = require('../Middleware/checkAccess');
 const {
@@ -45,20 +44,35 @@ const {
   cancel,
   refundPayment,
 } = require('../Controller/payment');
-const { fetchAllRoles, addRoles } = require('../Controller/auth/role');
+const {
+  fetchAllRoles,
+  addRoles,
+  addRolesAndPermission,
+  fetchAllPermissions,
+  fetchAllRolePermissions,
+  getAllRolesWithPermissions,
+} = require('../Controller/auth/role');
 
-//auth routess
-fetchAllRoles;
-router.get('/v1/getRoles', fetchAllRoles);
+//auth routess;
+router.get(
+  '/v1/getRoles',
+  authenticated,
+  permissionMiddleware(['view']),
+  fetchAllRoles
+);
+router.get('/v1/getPermissions', fetchAllPermissions);
+router.get('/v1/getRolePermission', fetchAllRolePermissions);
+router.get('/v1/getAllRolesWithPermissions', getAllRolesWithPermissions);
 router.post('/v1/addRoles', addRoles);
+router.post('/v1/addRolesPermission', addRolesAndPermission);
 //users routes
 router.get('/v1/userGetAll', authenticated, userGetAll);
 router.get('/v1/users/login', userLogin);
 router.post('/v1/users/userLoginOtp', userLoginOtp);
 router.post('/v1/users/forgetpassword', forgetpassword);
 router.post('/v1/users/resetpassword', resetpassword);
-router.get('/v1/user/:userid', authenticated, CheckAccess, getUser);
-router.get('/v1/users', authenticated, CheckAccess, getallUser);
+router.get('/v1/user/:userid', authenticated, permissionMiddleware, getUser);
+router.get('/v1/users', authenticated, permissionMiddleware, getallUser);
 //wishlist each user
 router.get('/v1/wishtlist/:id', userProduct);
 router.post('/v1/wishlist', addWishlist);
@@ -87,9 +101,9 @@ router.post('/v1/userposts', addPosts);
 //bulk insert
 router.post('/v1/bulkuserposts', addBulkPosts);
 router.put('/v1/userposts', updatePosts);
-router.delete('/v1/userpostsdelete/:id', CheckAccess, deleteUserPosts);
+router.delete('/v1/userpostsdelete/:id', permissionMiddleware, deleteUserPosts);
 //user posts admin approval
-router.put('/v1/approvalrequest', CheckAccess, approvedPosts);
+router.put('/v1/approvalrequest', permissionMiddleware, approvedPosts);
 
 //brandsAdd
 router.post('/v1/supplierAdd', brandsAdd);
@@ -101,7 +115,7 @@ router.post(
   '/v1/generatecertificate',
   upload.array('files', 2),
   authenticated,
-  CheckAccess,
+  permissionMiddleware,
   generatecertificate
 );
 
@@ -111,5 +125,5 @@ router.get('/success', success);
 router.get('/cancel', cancel);
 router.post('/v1/refund', refundPayment);
 
-// middleware,CheckAccess,
+// middleware,permissionMiddleware,
 module.exports = router;
