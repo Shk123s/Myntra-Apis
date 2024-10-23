@@ -440,7 +440,9 @@ const userLoginOtp = async (req, res) => {
         httpOnly: true,
         maxAge: 3600000,
       });
-      return CheckRole(res, userDetails, token);
+      const userData = CheckRole(userDetails);
+      userData.userDetails = userDetails;
+      return res.status(200).send({ data: userData, token });
     } else {
       res.status(401).send({
         message: 'Invalid otp',
