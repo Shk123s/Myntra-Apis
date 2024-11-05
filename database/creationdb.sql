@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS `wishlists` (
 --     FOREIGN KEY (subscription_id) REFERENCES subscriptions(subscription_id)
 );
 CREATE TABLE roles (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id  INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -217,7 +217,7 @@ VALUES
 
 
 CREATE TABLE permissions (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     is_active tinyint(1),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -231,19 +231,36 @@ VALUES
     ('create', 1);
 SELECT * FROM dbmall.role_permission;
 
+
+-- CREATE TABLE role_permissions (
+--     role_id INT REFERENCES roles(id) ON DELETE CASCADE,
+--     permission_id INT REFERENCES permissions(id) ON DELETE CASCADE,
+--     resource_id INT REFERENCES resources(id) ON DELETE CASCADE,
+--     PRIMARY KEY (role_id, permission_id, resource_id)
+-- );
+
 CREATE TABLE role_permission (
-     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+     id INT PRIMARY KEY AUTO_INCREMENT,
      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-     role_id BIGINT  NOT NULL,
+     role_id INT  NOT NULL,
      FOREIGN KEY (role_id) REFERENCES roles(id),
-     permission_id BIGINT NOT NULL,
-     FOREIGN KEY (permission_id) REFERENCES permissions(id)
+     permission_id INT NOT NULL,
+     FOREIGN KEY (permission_id) REFERENCES permissions(id),
+       resource_id INT REFERENCES resources(id) ON DELETE CASCADE,
+    PRIMARY KEY (role_id, permission_id, resource_id)
 );
 drop table role_permission;
  -- role  permission -- 
  -- 1 = admin , 2 = client  3  = user 
  --  1 vieew  2 = edit 3 = delete 4 = create 
+
+
+    CREATE TABLE resources (
+    id int  PRIMARY KEY AUTO_INCREMENT,
+    is_active tinyint(1),
+    resource_name VARCHAR(50) NOT NULL UNIQUE
+);
 
 INSERT INTO role_permission (role_id, permission_id)
 VALUES 
@@ -260,4 +277,16 @@ VALUES
 drop table role_permission;
 
 
-drop table transactions;
+drop table transactions;  
+
+
+
+CREATE TABLE cart (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);

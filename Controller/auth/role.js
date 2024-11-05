@@ -65,29 +65,41 @@ const fetchAllRolePermissions = async (req, res) => {
   }
 };
 
-const getAllRolesWithPermissions = async () => {
+const getAllRolesWithPermissions = async (req, res) => {
   const query = `
-     SELECT roles.name AS role_name, permissions.name AS permission_name
+     SELECT roles.name AS role_name, 
+            permissions.name AS permission_name, 
+            resources.resource_name AS resource_name
      FROM role_permission
-    JOIN roles ON role_permission.role_id = roles.id
-    JOIN permissions ON role_permission.permission_id = permissions.id;
+     JOIN roles ON role_permission.role_id = roles.id
+     JOIN permissions ON role_permission.permission_id = permissions.id
+     JOIN resources ON role_permission.resource_id = resources.id;
   `;
 
   try {
     const [results] = await connection.promise().execute(query);
-    // Group by role and permissions
     const rolesWithPermissions = results.reduce((acc, row) => {
-      const { role_name, permission_name } = row;
+      const { role_name, permission_name, resource_name } = row;
+
       if (!acc[role_name]) {
-        acc[role_name] = [];
+        acc[role_name] = {};
       }
-      acc[role_name].push(permission_name);
+
+      if (!acc[role_name][resource_name]) {
+        acc[role_name][resource_name] = [];
+      }
+
+      acc[role_name][resource_name].push(permission_name);
       return acc;
     }, {});
-    //  res.send({data:rolesWithPermissions})
+
+    res.send({ data: rolesWithPermissions });
     return rolesWithPermissions;
   } catch (error) {
-    console.error('Error fetching permissions:', error);
+    console.error(
+      'Error fetching roles with permissions and resources:',
+      error
+    );
     throw error;
   }
 };
