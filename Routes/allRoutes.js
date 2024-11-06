@@ -51,15 +51,19 @@ const {
   fetchAllPermissions,
   fetchAllRolePermissions,
   getAllRolesWithPermissions,
+  addResources,
 } = require('../Controller/auth/role');
 
-//auth routess;
+//auth admin routess;
 router.get(
-  '/v1/getRoles',
+  '/v1/admin/getRoles',
   authenticated,
-  permissionMiddleware(['view']),
+  permissionMiddleware(['view'], ['role']),
   fetchAllRoles
 );
+
+// add resources
+router.post('/v1/addResources', addResources);
 router.get('/v1/getPermissions', fetchAllPermissions);
 router.get('/v1/getRolePermission', fetchAllRolePermissions);
 router.get('/v1/getAllRolesWithPermissions', getAllRolesWithPermissions);

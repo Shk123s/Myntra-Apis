@@ -92,8 +92,6 @@ const getAllRolesWithPermissions = async (req, res) => {
       acc[role_name][resource_name].push(permission_name);
       return acc;
     }, {});
-
-    res.send({ data: rolesWithPermissions });
     return rolesWithPermissions;
   } catch (error) {
     console.error(
@@ -133,22 +131,23 @@ const addRoles = async (req, res) => {
     res.status(500).send({ message: 'Internal server error.' });
   }
 };
+//resource add remaining
 const addRolesAndPermission = async (req, res) => {
   try {
-    const { role_id, permission_id } = req.body;
+    const { role_id, permission_id, resource_id } = req.body;
 
-    if (!role_id || !permission_id) {
+    if (!role_id || !permission_id || !resource_id) {
       return res
         .status(400)
         .send({ message: 'role_id and permission_id must be provided.' });
     }
 
     const sqlquery =
-      'INSERT INTO role_permission(role_id, permission_id) VALUES(?, ?)';
+      'INSERT INTO role_permission(role_id, permission_id,resource_id) VALUES(?, ?,?)';
 
     const [result] = await connection
       .promise()
-      .execute(sqlquery, [role_id, permission_id]);
+      .execute(sqlquery, [role_id, permission_id, resource_id]);
 
     if (result.affectedRows === 0) {
       res.status(200).send({ message: 'Not created' });
@@ -164,6 +163,39 @@ const addRolesAndPermission = async (req, res) => {
   }
 };
 
+const addResources = async (req, res) => {
+  try {
+    const { resource_name } = req.body;
+    id = 9;
+    isActive = 1;
+    if (resource_name === undefined || isActive === undefined) {
+      return res
+        .status(400)
+        .send({ message: 'resource_name must be provided.' });
+    }
+    connection.beginTransaction();
+    const sqlquery =
+      'INSERT INTO resources(id,resource_name, is_active) VALUES(?,?, ?)';
+
+    const [result] = await connection
+      .promise()
+      .execute(sqlquery, [id, resource_name, isActive]);
+
+    connection.commit();
+    if (result.affectedRows === 0) {
+      res.status(200).send({ message: 'Error occurs.' });
+    } else {
+      res
+        .status(200)
+        .send({ message: 'Resources added successfully.', data: result });
+    }
+  } catch (error) {
+    connection.rollback();
+    console.log(error);
+    res.status(500).send({ res, message: 'Internal server error.' });
+  }
+};
+
 module.exports = {
   fetchAllRoles,
   addRoles,
@@ -171,4 +203,5 @@ module.exports = {
   fetchAllPermissions,
   fetchAllRolePermissions,
   getAllRolesWithPermissions,
+  addResources,
 };

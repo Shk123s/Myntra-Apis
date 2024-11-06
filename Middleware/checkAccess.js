@@ -44,10 +44,11 @@ const authenticated = (req, res, next) => {
 // };
 
 // Middleware to check required permissions dynamically
-const permissionMiddleware = (requiredPermissions) => {
+const permissionMiddleware = (requiredPermissions, resource) => {
   return async (req, res, next) => {
     try {
-      const query = 'select *  from roles where id = ?';
+      // Fetch the user's role from the database
+      const query = 'SELECT * FROM roles WHERE id = ?';
       const [RoleResults] = await connection
         .promise()
         .execute(query, [req.user.is_role]);
@@ -56,18 +57,23 @@ const permissionMiddleware = (requiredPermissions) => {
 
       const userPermissions = allPermissions[RoleResults[0].name];
 
-      if (!userPermissions) {
+      const resourcePermissions = userPermissions
+        ? userPermissions[resource]
+        : null;
+
+      if (!resourcePermissions) {
         return res
           .status(403)
-          .json({ message: 'Role not found or no permissions assigned' });
+          .json({ message: 'Access denied: no permissions for this resource' });
       }
-
       const hasPermission = requiredPermissions.every((permission) =>
-        userPermissions.includes(permission)
+        resourcePermissions.includes(permission)
       );
 
       if (!hasPermission) {
-        return res.status(403).json({ message: 'Access denied' });
+        return res
+          .status(403)
+          .json({ message: 'Access denied: insufficient permissions' });
       }
 
       next();
