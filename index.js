@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
 const allroutes = require('./Routes/allRoutes');
 const bodyParser = require('body-parser');
@@ -7,6 +8,8 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
+
+app.use(cors());
 
 app.get('/healthCheck', async (req, res, next) => {
   try {
