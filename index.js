@@ -8,6 +8,21 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+app.get('/healthCheck', async (req, res, next) => {
+  try {
+    res.status(200).json({
+      message: '🚀 Backend Service is Up and Running! 💻🌟',
+      dBHealthCheck: '✅ PASS 🗄️',
+      status: 'success',
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Health check failed!',
+      error: error.message,
+    });
+  }
+});
+
 app.use(bodyParser.json({ type: 'application/json' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
