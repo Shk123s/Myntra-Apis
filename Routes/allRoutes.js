@@ -71,7 +71,7 @@ router.post('/v1/addRoles', addRoles);
 router.post('/v1/addRolesPermission', addRolesAndPermission);
 //users routes
 router.get('/v1/userGetAll', authenticated, userGetAll);
-router.get('/v1/users/login', userLogin);
+router.post('/v1/users/login', userLogin);
 router.post('/v1/users/userLoginOtp', userLoginOtp);
 router.post('/v1/users/forgetpassword', forgetpassword);
 router.post('/v1/users/resetpassword', resetpassword);
