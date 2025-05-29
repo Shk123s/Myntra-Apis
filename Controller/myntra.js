@@ -1178,7 +1178,75 @@ const brandsGetAll = async (req, res, next) => {
   }
 };
 
+const contactMe = async (req, res) => {
+  try {
+    const { email, number } = req.body;
+
+    // Input validation schema
+    const contactSchema = Joi.object({
+      email: Joi.string().email().required().messages({
+        'string.email': 'Please enter a valid email address.',
+        'any.required': 'Email is required.',
+        'string.empty': 'Email is required.',
+      }),
+      number: Joi.string().required().messages({
+        'any.required': 'Phone number is required.',
+        'string.empty': 'Phone number is required.',
+      }),
+    });
+
+    const { error } = contactSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).send({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
+
+    // Send a response before email (to not block user)
+    res.status(200).send({
+      success: true,
+      message: 'Thank you! We’ve received your message.',
+    });
+
+    // Send email in background
+    const info = await transporter.sendMail({
+      from: 'shaqeebsk1234@gmail.com',
+      to: email,
+      subject: 'Thank You for Contacting Me!',
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #1e1e2f; color: #f4f4f4; padding: 20px; border-radius: 8px;">
+          <h2 style="color: #8f5cf6;">Thanks for reaching out!</h2>
+          <p>We’ve received your contact details and will get back to you shortly.</p>
+          <div style="margin-top: 20px;">
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Phone Number:</strong> ${number}</p>
+          </div>
+          <hr style="margin: 20px 0; border-color: #333;" />
+          <p style="font-size: 12px; color: #aaa;">This is an automated message. Please don’t reply directly to this email.</p>
+        </div>
+      `,
+    });
+
+    if (info.accepted.length > 0) {
+      console.log(
+        `✅ Message sent to ${email} (Message ID: ${info.messageId})`
+      );
+    } else {
+      console.log(`❌ Email sending failed for ${email}`);
+    }
+  } catch (error) {
+    console.error('Email send error:', error);
+    return res.status(500).send({
+      success: false,
+      message: 'Internal Server Error. Please try again later.',
+    });
+  }
+};
+
 module.exports = {
+  contactMe,
   getProduct,
   userProduct,
   getProductId,
