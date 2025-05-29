@@ -32,6 +32,7 @@ const {
   addSubcategory,
   userGetAll,
   BulkProductAdd,
+  contactMe,
 } = require('../Controller/myntra');
 const router = express.Router();
 const {
@@ -128,6 +129,9 @@ router.post('/payment', payment);
 router.get('/success', success);
 router.get('/cancel', cancel);
 router.post('/v1/refund', refundPayment);
+
+// contact me api for portfolio
+router.post('/contactme', contactMe);
 
 // middleware,permissionMiddleware,
 module.exports = router;
